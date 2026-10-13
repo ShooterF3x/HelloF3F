@@ -323,10 +323,9 @@
 </div>
 
 <script>
-    const GITHUB_OWNER = ""; 
-    const GITHUB_REPO = "";  
-    const GITHUB_FOLDER = "data/2026";
-    const LOCAL_CSV_FILES = [];
+    // Renseigne ici ton nom d'utilisateur GitHub et le nom de ton dépôt
+    const GITHUB_OWNER = "ShooterF3x"; 
+    const GITHUB_REPO = "be-f3f";  
 
     let rawContestsData = [];
     let currentSeasonRankings = [];
@@ -370,51 +369,47 @@
     }
 
     async function loadContestsAutomatically() {
-        document.getElementById('status').innerText = "Recherche des concours...";
+        document.getElementById('status').innerText = "Recherche des dossiers de saisons sur GitHub...";
         rawContestsData = [];
 
         if (GITHUB_OWNER && GITHUB_REPO) {
             try {
-                const apiUrl = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${GITHUB_FOLDER}`;
-                let response = await fetch(apiUrl);
-                if (response.ok) {
-                    let files = await response.json();
-                    let csvFiles = files.filter(file => file.name.endsWith('.csv'));
-                    let promises = csvFiles.map(async (file) => {
-                        let res = await fetch(file.download_url);
-                        let text = await res.text();
-                        parseVaultCSV(text, file.name);
-                    });
-                    await Promise.all(promises);
+                // Scanne dynamiquement le dossier 'data' pour trouver toutes les années (ex: 2025, 2026...)
+                const dataUrl = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/data`;
+                let resData = await fetch(dataUrl);
+                if (resData.ok) {
+                    let items = await resData.json();
+                    let yearDirs = items.filter(item => item.type === 'dir');
+                    
+                    for (let yearDir of yearDirs) {
+                        let yearRes = await fetch(yearDir.url);
+                        if (yearRes.ok) {
+                            let files = await yearRes.json();
+                            let csvFiles = files.filter(f => f.name.endsWith('.csv'));
+                            let promises = csvFiles.map(async (file) => {
+                                let fRes = await fetch(file.download_url);
+                                if (fRes.ok) {
+                                    let text = await fRes.text();
+                                    parseVaultCSV(text, file.name);
+                                }
+                            });
+                            await Promise.all(promises);
+                        }
+                    }
                 }
             } catch (err) {
-                console.warn("Échec du chargement GitHub, passage en mode local...");
+                console.warn("Échec du chargement GitHub automatique :", err);
             }
-        }
-
-        if (rawContestsData.length === 0 && LOCAL_CSV_FILES.length > 0) {
-            let promises = LOCAL_CSV_FILES.map(async (filePath) => {
-                try {
-                    let res = await fetch(filePath);
-                    if (res.ok) {
-                        let text = await res.text();
-                        parseVaultCSV(text, filePath.split('/').pop());
-                    }
-                } catch (e) {
-                    console.warn("Fichier local non trouvé :", filePath);
-                }
-            });
-            await Promise.all(promises);
         }
 
         if (rawContestsData.length > 0) {
             rawContestsData.sort((a, b) => a.date.getTime() - b.date.getTime());
             saveToLocalStorage();
-            document.getElementById('status').innerText = `${rawContestsData.length} concours chargé(s) avec succès.`;
+            document.getElementById('status').innerText = `${rawContestsData.length} concours chargé(s) depuis GitHub.`;
             populateYearSelector();
             renderActiveSeason();
         } else {
-            document.getElementById('status').innerText = "Aucun fichier CSV trouvé (GitHub ou Local).";
+            document.getElementById('status').innerText = "Aucun fichier CSV trouvé automatiquement sur GitHub. Utilisez l'import manuel ci-dessous.";
             renderEmptyAdminView();
         }
     }
@@ -475,7 +470,7 @@
         manageDiv.className = 'tab-content active';
         manageDiv.innerHTML = `
             <h2>Importer vos premiers concours</h2>
-            <p style="font-size:13px; color:var(--text-muted);">Aucun concours trouvé dans le dossier. Déposez vos fichiers F3X Vault CSV ci-dessous pour initialiser le classement.</p>
+            <p style="font-size:13px; color:var(--text-muted);">Aucun concours trouvé automatiquement. Déposez vos fichiers F3X Vault CSV ci-dessous ou vérifiez vos identifiants GitHub dans le code.</p>
             <div class="upload-area" onclick="document.getElementById('csvFiles').click()">
                 <h3>📁 Cliquez ou glissez vos fichiers CSV ici</h3>
                 <input type="file" id="csvFiles" multiple accept=".csv" onchange="handleFileSelect(event)">
@@ -547,527 +542,4 @@
     }
 
     function populateYearSelector() {
-        let years = [...new Set(rawContestsData.map(c => c.year))].sort((a,b) => b - a);
-        if (years.length === 0) return;
-        
-        let select = document.getElementById('yearSelect');
-        let currentVal = select.value;
-        select.innerHTML = '';
-        years.forEach(y => {
-            select.innerHTML += `<option value="${y}">Saison ${y}</option>`;
-        });
-        
-        if (currentVal && years.includes(parseInt(currentVal))) {
-            select.value = currentVal;
-        } else {
-            select.value = years[0];
-        }
-        document.getElementById('controlsBar').style.display = 'flex';
-    }
-
-    function renderActiveSeason() {
-        let select = document.getElementById('yearSelect');
-        if (!select || select.options.length === 0) return;
-        let selectedYear = parseInt(select.value);
-
-        activeContests = rawContestsData.map(c => ({
-            ...c,
-            scores: {...c.scores},
-            details: [...c.details]
-        })).filter(c => c.year === selectedYear);
-
-        activeContests.sort((a, b) => a.date.getTime() - b.date.getTime());
-
-        document.getElementById('loadedCount').innerText = `(${activeContests.length} concours en 20${selectedYear.toString().slice(-2)})`;
-
-        if (activeContests.length === 0) {
-            document.getElementById('tabContentsContainer').innerHTML = `<h2>Aucun concours enregistré pour la saison ${selectedYear}.</h2>`;
-            return;
-        }
-
-        let seasonPilots = new Set();
-        activeContests.forEach(c => Object.keys(c.scores).forEach(p => seasonPilots.add(p)));
-
-        const BASE_K = 300; 
-
-        // ÉTAPE 1 : CONVERGENCE GLOBALE ITÉRATIVE (Lissage global et rétroactif de la saison)
-        let pilotEloGlobal = {};
-        seasonPilots.forEach(p => pilotEloGlobal[p] = 1200);
-
-        for (let iter = 0; iter < 15; iter++) {
-            activeContests.forEach(c => {
-                let participants = Object.keys(c.scores);
-                let sumElo = participants.reduce((acc, p) => acc + (pilotEloGlobal[p] || 1200), 0);
-                c.contestElo = participants.length > 0 ? (sumElo / participants.length) : 1200;
-            });
-            let totalContestElos = activeContests.reduce((acc, c) => acc + c.contestElo, 0);
-            let meanNationalElo = activeContests.length > 0 ? (totalContestElos / activeContests.length) : 1200;
-
-            activeContests.forEach(c => {
-                c.idc = meanNationalElo > 0 ? (c.contestElo / meanNationalElo) : 1;
-            });
-
-            let deltaElos = {};
-            seasonPilots.forEach(p => deltaElos[p] = 0);
-
-            activeContests.forEach(c => {
-                let participants = Object.keys(c.scores);
-                participants.sort((a, b) => c.scores[b] - c.scores[a]);
-                let N = participants.length;
-                if (N < 2) return;
-
-                let K_eff = (BASE_K * c.idc) / (N - 1);
-
-                for (let i = 0; i < N; i++) {
-                    for (let j = i + 1; j < N; j++) {
-                        let pA = participants[i];
-                        let pB = participants[j];
-                        let ra = pilotEloGlobal[pA];
-                        let rb = pilotEloGlobal[pB];
-                        
-                        let ea = 1 / (1 + Math.pow(10, (rb - ra) / 400));
-                        let eb = 1 / (1 + Math.pow(10, (ra - rb) / 400));
-                        
-                        let sa = (c.scores[pA] === c.scores[pB]) ? 0.5 : 1;
-                        let sb = 1 - sa;
-                        
-                        deltaElos[pA] += K_eff * (sa - ea) * 0.1; 
-                        deltaElos[pB] += K_eff * (sb - eb) * 0.1;
-                    }
-                }
-            });
-            
-            seasonPilots.forEach(p => {
-                pilotEloGlobal[p] = Math.max(800, pilotEloGlobal[p] + deltaElos[p]);
-            });
-        }
-
-        // ÉTAPE 2 : Historique graphique et fiches de concours ancrés sur les dates réelles
-        let sortedContestsForHistory = [...activeContests].sort((a, b) => a.date.getTime() - b.date.getTime());
-        
-        let trackingElo = {};
-        seasonPilots.forEach(p => trackingElo[p] = 1200);
-        currentSeasonHistories = {};
-
-        sortedContestsForHistory.forEach(c => {
-            let participants = Object.keys(c.scores);
-            participants.sort((a, b) => c.scores[b] - c.scores[a]);
-            let N = participants.length;
-            if (N < 2) return;
-
-            let K_eff = (BASE_K * c.idc) / (N - 1);
-            let snapshot = {...trackingElo};
-            
-            for (let i = 0; i < N; i++) {
-                for (let j = i + 1; j < N; j++) {
-                    let pA = participants[i];
-                    let pB = participants[j];
-                    let ra = trackingElo[pA] || 1200;
-                    let rb = trackingElo[pB] || 1200;
-                    
-                    let ea = 1 / (1 + Math.pow(10, (rb - ra) / 400));
-                    let eb = 1 / (1 + Math.pow(10, (ra - rb) / 400));
-                    
-                    let sa = (c.scores[pA] === c.scores[pB]) ? 0.5 : 1;
-                    let sb = 1 - sa;
-
-                    snapshot[pA] = (snapshot[pA] || 1200) + K_eff * (sa - ea);
-                    snapshot[pB] = (snapshot[pB] || 1200) + K_eff * (sb - eb);
-                }
-            }
-            trackingElo = snapshot;
-            c.postContestElos = {...trackingElo};
-        });
-
-        currentSeasonRankings = [];
-        let pilotsArr = Array.from(seasonPilots);
-        
-        pilotsArr.forEach(pilot => {
-            let contestCount = 0;
-            let history = []; 
-
-            sortedContestsForHistory.forEach(c => {
-                if (c.scores[pilot] !== undefined) {
-                    let rawScore = c.scores[pilot];
-                    contestCount++;
-                    let eloAfterContest = Math.round(c.postContestElos && c.postContestElos[pilot] !== undefined ? c.postContestElos[pilot] : 1200);
-
-                    history.push({
-                        contestName: c.name,
-                        date: c.date.toLocaleDateString(),
-                        raw: rawScore,
-                        eloAfter: eloAfterContest
-                    });
-                }
-            });
-
-            // Cote finale = la cote globale stable issue de la convergence
-            let finalEloVal = Math.round(pilotEloGlobal[pilot] || 1200);
-            let isOfficial = contestCount >= MIN_CONTESTS_REQUIRED;
-
-            if (history.length > 0) {
-                history[history.length - 1].eloAfter = finalEloVal;
-            }
-            
-            currentSeasonRankings.push({ 
-                pilot, 
-                cote: finalEloVal, 
-                contestCount, 
-                totalRounds: history.length, 
-                isOfficial, 
-                elo: finalEloVal 
-            });
-            currentSeasonHistories[pilot] = history;
-        });
-
-        currentSeasonRankings.sort((a, b) => {
-            if (a.isOfficial && !b.isOfficial) return -1;
-            if (!a.isOfficial && b.isOfficial) return 1;
-            return b.elo - a.elo;
-        });
-
-        buildUI();
-    }
-
-    function buildUI() {
-        let contentsContainer = document.getElementById('tabContentsContainer');
-        contentsContainer.innerHTML = '';
-
-        menuItemsConfig = [
-            { label: 'Classement Général Elo', targetId: 'tab-general', group: 'Navigation' },
-            { label: 'Profils & Évolution', targetId: 'tab-profiles', group: 'Navigation' },
-            { label: '🔍 Audit & Transparence (Elo)', targetId: 'tab-audit', group: 'Transparence' },
-            { label: 'Gestion des Concours', targetId: 'tab-manage', group: 'Administration' }
-        ];
-
-        // --- Onglet 1 : Classement Général Elo ---
-        let generalDiv = document.createElement('div');
-        generalDiv.id = 'tab-general';
-        generalDiv.className = `tab-content ${activeTabId === 'tab-general' ? 'active' : ''}`;
-        
-        let genHtml = `<h2>Classement Général Elo Global — Saison ${document.getElementById('yearSelect').value}</h2>`;
-        genHtml += `<p style="font-size: 13px; color: var(--text-muted);">Classement stable et lissé par convergence globale &bull; Minimum ${MIN_CONTESTS_REQUIRED} concours.</p>`;
-        genHtml += '<table><tr><th>Rang</th><th>Pilote</th><th>Cote Elo</th><th>Concours Disputés</th><th>Statut</th></tr>';
-        
-        let officialRank = 1;
-        currentSeasonRankings.forEach((r) => {
-            let rankDisplay = r.isOfficial ? officialRank++ : '-';
-            let statusBadge = r.isOfficial ? '<span style="color:#107c41; font-weight:500;">Officiel</span>' : '<span style="color:#d97706;">Non classé (< 3)</span>';
-            let rowClass = r.isOfficial ? '' : 'nc-row';
-
-            genHtml += `<tr class="${rowClass}">
-                <td>${rankDisplay}</td>
-                <td><span class="pilot-link" onclick="openPilotProfile('${r.pilot}')">${r.pilot}</span></td>
-                <td class="highlight"><b>${r.elo} pts</b></td>
-                <td>${r.contestCount}</td>
-                <td>${statusBadge}</td>
-            </tr>`;
-        });
-        genHtml += '</table>';
-        generalDiv.innerHTML = genHtml;
-        contentsContainer.appendChild(generalDiv);
-
-        // --- Onglet 2 : Fiches Pilotes ---
-        let profilesDiv = document.createElement('div');
-        profilesDiv.id = 'tab-profiles';
-        profilesDiv.className = `tab-content ${activeTabId === 'tab-profiles' ? 'active' : ''}`;
-        
-        let profHtml = '<h2>Suivi Individuel & Évolution Chronologique</h2>';
-        profHtml += '<div class="profile-container">';
-        profHtml += '<div class="profile-sidebar"><div style="font-size:12px; font-weight:600; color:var(--text-muted); margin-bottom:8px; text-transform:uppercase;">Pilotes</div>';
-        currentSeasonRankings.forEach(r => {
-            let marker = r.isOfficial ? '' : ' (NC)';
-            profHtml += `<div class="pilot-item" onclick="selectPilot('${r.pilot}')">${r.pilot}${marker}</div>`;
-        });
-        profHtml += '</div>';
-        
-        profHtml += '<div class="profile-main" id="pilotProfileMain"><p style="color:var(--text-muted); text-align:center; margin-top:50px;">Sélectionnez un pilote pour afficher l\'évolution chronologique de ses performances et de son Elo.</p></div>';
-        profHtml += '</div>';
-        profilesDiv.innerHTML = profHtml;
-        contentsContainer.appendChild(profilesDiv);
-
-        // --- Onglet 3 : Audit & Transparence (Elo) ---
-        let auditDiv = document.createElement('div');
-        auditDiv.id = 'tab-audit';
-        auditDiv.className = `tab-content ${activeTabId === 'tab-audit' ? 'active' : ''}`;
-        
-        let auditHtml = `<h2>🔍 Audit & Vérification du Moteur Global</h2>`;
-        auditHtml += `<p style="font-size: 13px; color: var(--text-muted);">Indice de difficulté (IDC) et Elo moyen des plateaux.</p>`;
-
-        activeContests.forEach(c => {
-            auditHtml += `<div class="audit-card">
-                <h3 style="margin-top:0; color:var(--primary);">${c.name} <span style="font-size:12px; font-weight:normal; color:var(--text-muted);">(${c.date.toLocaleDateString()})</span></h3>
-                <p style="font-size:13.5px; margin: 4px 0;"><b>Coefficient IDC :</b> <span class="highlight">${c.idc.toFixed(3)}</span> &bull; Elo moyen du plateau : <b>${Math.round(c.contestElo)} pts</b></p>
-            </div>`;
-        });
-
-        auditDiv.innerHTML = auditHtml;
-        contentsContainer.appendChild(auditDiv);
-
-        // --- Onglet 4 : Gestion des Concours ---
-        let manageDiv = document.createElement('div');
-        manageDiv.id = 'tab-manage';
-        manageDiv.className = `tab-content ${activeTabId === 'tab-manage' ? 'active' : ''}`;
-        
-        let manHtml = '<h2>Administration des Fichiers CSV</h2>';
-        manHtml += '<p style="font-size:13px; color:var(--text-muted);">Gestion des concours de la saison.</p>';
-        manHtml += `
-            <div class="upload-area" onclick="document.getElementById('csvFiles').click()">
-                <h3>📁 Cliquez ou glissez vos nouveaux fichiers CSV ici</h3>
-                <input type="file" id="csvFiles" multiple accept=".csv" onchange="handleFileSelect(event)">
-            </div>
-        `;
-        manHtml += '<table><tr><th>Concours</th><th>Date</th><th>Manches</th><th>Participants</th><th>Action</th></tr>';
-        rawContestsData.forEach((c) => {
-            let realIdx = rawContestsData.indexOf(c);
-            manHtml += `<tr>
-                <td><b>${c.name}</b></td>
-                <td>${c.date.toLocaleDateString()}</td>
-                <td>${c.rounds}</td>
-                <td>${Object.keys(c.scores).length} pilotes</td>
-                <td><button class="btn-danger" onclick="deleteContest(${realIdx})">Supprimer</button></td>
-            </tr>`;
-        });
-        manHtml += '</table>';
-        manageDiv.innerHTML = manHtml;
-        contentsContainer.appendChild(manageDiv);
-
-        // --- Onglets Concours ---
-        activeContests.forEach((contest, index) => {
-            let tabId = `tab-contest-${index}`;
-            menuItemsConfig.push({ label: contest.name, targetId: tabId, group: 'Concours de la saison' });
-
-            let contestDiv = document.createElement('div');
-            contestDiv.id = tabId;
-            contestDiv.className = `tab-content ${activeTabId === tabId ? 'active' : ''}`;
-
-            let cHtml = `<h2>Résultats Officiels : ${contest.name}</h2>`;
-            cHtml += `<p style="font-size:13px; color:var(--text-muted);">Date : ${contest.date.toLocaleDateString()} &bull; Manches : ${contest.rounds} &bull; IDC : <span class="highlight">${contest.idc.toFixed(3)}</span></p>`;
-            cHtml += '<div class="scrollable-table"><table>';
-            cHtml += '<tr><th>Pos</th><th>Pilote</th><th>Total Points</th><th>Pourcentage</th><th>Cote Elo (après)</th></tr>';
-            
-            contest.details.sort((a, b) => parseInt(a[0]) - parseInt(b[0]));
-            contest.details.forEach(row => {
-                let pos = row[0];
-                let name = row[contest.headers.indexOf("Pilot_Name")] || "";
-                let points = row[contest.headers.indexOf("Total Points")] || "";
-                let percent = row[contest.headers.indexOf("Percent")] || "";
-                
-                let upperName = name.toUpperCase();
-                let eloAfter = contest.postContestElos && contest.postContestElos[upperName] !== undefined 
-                    ? Math.round(contest.postContestElos[upperName]) 
-                    : '-';
-
-                cHtml += `<tr>
-                    <td>${pos}</td>
-                    <td><span class="pilot-link" onclick="openPilotProfile('${upperName}')">${name}</span></td>
-                    <td>${points}</td>
-                    <td class="highlight">${percent}%</td>
-                    <td><b>${eloAfter} pts</b></td>
-                </tr>`;
-            });
-            cHtml += '</table></div>';
-            contestDiv.innerHTML = cHtml;
-            contentsContainer.appendChild(contestDiv);
-        });
-
-        buildDropdownMenu();
-    }
-
-    function buildDropdownMenu() {
-        let menuEl = document.getElementById('dropdownMenu');
-        menuEl.innerHTML = '';
-
-        let groups = {};
-        menuItemsConfig.forEach(item => {
-            if (!groups[item.group]) groups[item.group] = [];
-            groups[item.group].push(item);
-        });
-
-        for (let groupName in groups) {
-            let sectionTitle = document.createElement('div');
-            sectionTitle.className = 'dropdown-section-title';
-            sectionTitle.innerText = groupName;
-            menuEl.appendChild(sectionTitle);
-
-            groups[groupName].forEach(item => {
-                let btn = document.createElement('button');
-                btn.className = `menu-item ${activeTabId === item.targetId ? 'active' : ''}`;
-                btn.innerText = item.label;
-                btn.onclick = function() {
-                    switchTab(item.targetId);
-                };
-                menuEl.appendChild(btn);
-            });
-        }
-    }
-
-    function switchTab(targetId) {
-        activeTabId = targetId;
-        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-        let targetDiv = document.getElementById(targetId);
-        if (targetDiv) targetDiv.classList.add('active');
-        
-        document.getElementById('dropdownMenu').classList.remove('show');
-        buildDropdownMenu();
-    }
-
-    function openPilotProfile(pilotName) {
-        switchTab('tab-profiles');
-        selectPilot(pilotName);
-    }
-
-    function selectPilot(pilotName) {
-        document.querySelectorAll('.pilot-item').forEach(item => {
-            if (item.innerText.includes(pilotName)) item.classList.add('active');
-            else item.classList.remove('active');
-        });
-
-        let history = currentSeasonHistories[pilotName] || [];
-        let rankObj = currentSeasonRankings.find(r => r.pilot === pilotName);
-
-        let mainDiv = document.getElementById('pilotProfileMain');
-        let html = `<h3>${pilotName}</h3>`;
-        if (rankObj) {
-            let statusText = rankObj.isOfficial ? '<span style="color:#107c41; font-weight:500;">Officiel</span>' : '<span style="color:#d97706;">Non classé (< 3 concours)</span>';
-            html += `<p style="font-size:13px; color:var(--text-muted);">Cote Elo : <b class="highlight">${rankObj.elo} pts</b> &bull; Concours disputés : ${rankObj.contestCount} &bull; Statut : ${statusText}</p>`;
-        }
-
-        if (history.length === 0) {
-            html += `<p style="color:var(--text-muted);">Aucun concours enregistré pour ce pilote.</p>`;
-        } else {
-            html += generateSVGScoreChart(history);
-        }
-
-        mainDiv.innerHTML = html;
-    }
-
-    function generateSVGScoreChart(history) {
-        let width = 680;
-        let height = 320;
-        let padding = 45;
-
-        let rawScores = history.map(h => h.raw);
-        let eloScores = history.map(h => h.eloAfter);
-        
-        let minRaw = Math.floor((Math.min(...rawScores, 850) - 10) / 50) * 50;
-        let maxRaw = Math.ceil((Math.max(...rawScores, 1020) + 10) / 50) * 50;
-
-        let minElo = Math.floor((Math.min(...eloScores, 1150) - 50) / 100) * 100;
-        let maxElo = Math.ceil((Math.max(...eloScores, 1250) + 50) / 100) * 100;
-        if (minElo === maxElo) { maxElo += 100; minElo -= 100; }
-
-        let dx = (width - padding * 2) / Math.max(history.length - 1, 1);
-        let dyRaw = (height - padding * 2) / (maxRaw - minRaw || 1);
-        let dyElo = (height - padding * 2) / (maxElo - minElo || 1);
-
-        let rawPoints = history.map((h, i) => ({
-            x: padding + i * dx,
-            y: height - padding - (h.raw - minRaw) * dyRaw,
-            val: h.raw,
-            name: h.contestName
-        }));
-
-        let eloPoints = history.map((h, i) => ({
-            x: padding + i * dx,
-            y: height - padding - (h.eloAfter - minElo) * dyElo,
-            val: h.eloAfter,
-            name: h.contestName
-        }));
-
-        let rawLine = rawPoints.map(p => `${p.x},${p.y}`).join(' ');
-        let eloLine = eloPoints.map(p => `${p.x},${p.y}`).join(' ');
-
-        let svg = `<svg class="svg-chart" viewBox="0 0 ${width} ${height}">`;
-        
-        for (let s = minRaw; s <= maxRaw; s += 50) {
-            let y = height - padding - (s - minRaw) * dyRaw;
-            svg += `<line x1="${padding}" y1="${y}" x2="${width - padding}" y2="${y}" stroke="#edf2f7" stroke-dasharray="3" />`;
-            if (s % 100 === 0) {
-                svg += `<text x="${padding - 8}" y="${y + 4}" font-size="9" fill="#e53e3e" text-anchor="end">${s}</text>`;
-            }
-        }
-
-        for (let e = minElo; e <= maxElo; e += 100) {
-            let y = height - padding - (e - minElo) * dyElo;
-            svg += `<text x="${width - padding + 8}" y="${y + 4}" font-size="9" fill="#1b365d" text-anchor="start">${e}</text>`;
-        }
-
-        if (history.length > 1) {
-            svg += `<polyline fill="none" stroke="#e53e3e" stroke-width="1.5" stroke-dasharray="3" points="${rawLine}" />`;
-            svg += `<polyline fill="none" stroke="#1b365d" stroke-width="2.5" points="${eloLine}" />`;
-        }
-
-        rawPoints.forEach((p, i) => {
-            svg += `<circle cx="${p.x}" cy="${p.y}" r="4" fill="#e53e3e" stroke="#fff" stroke-width="1.5"/>`;
-            let ep = eloPoints[i];
-            svg += `<circle cx="${ep.x}" cy="${ep.y}" r="5" fill="#1b365d" stroke="#fff" stroke-width="1.5"/>`;
-            svg += `<text x="${ep.x}" y="${ep.y - 10}" font-size="10" fill="#1b365d" font-weight="700" text-anchor="middle">${ep.val} pts</text>`;
-            svg += `<text x="${p.x}" y="${height - padding + 18}" font-size="10" fill="#4a5568" text-anchor="middle" transform="rotate(-10 ${p.x} ${height - padding + 18})">${p.name}</text>`;
-        });
-
-        svg += `</svg>`;
-
-        svg += `<div class="legend">
-            <div class="legend-item"><span class="legend-color" style="background: #1b365d;"></span> <b>Évolution Elo (Axe droit)</b></div>
-            <div class="legend-item"><span class="legend-color" style="background: #e53e3e; border-top: 2px dashed #e53e3e; height:0;"></span> <b>Score Brut F3X Vault (Axe gauche)</b></div>
-        </div>`;
-
-        return svg;
-    }
-
-    function exportToExcelMultiSheet() {
-        let selectedYear = document.getElementById('yearSelect').value;
-        let xml = `<?xml version="1.0" encoding="utf-8"?>
-        <?mso-application progid="Excel.Sheet"?>
-        <Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
-         xmlns:o="urn:schemas-microsoft-com:office:office"
-         xmlns:x="urn:schemas-microsoft-com:office:excel"
-         xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"
-         xmlns:html="http://www.w3.org/TR/REC-html40">`;
-
-        xml += `<Worksheet ss:Name="Classement Elo Global"><Table>`;
-        xml += `<Row><Cell><Data ss:Type="String">Rang</Data></Cell><Cell><Data ss:Type="String">Pilote</Data></Cell><Cell><Data ss:Type="String">Cote Elo</Data></Cell><Cell><Data ss:Type="String">Concours Disputes</Data></Cell><Cell><Data ss:Type="String">Statut</Data></Cell></Row>`;
-        let officialRank = 1;
-        currentSeasonRankings.forEach(r => {
-            let rankDisp = r.isOfficial ? (officialRank++) : '-';
-            let status = r.isOfficial ? 'Officiel' : 'Non classe';
-            xml += `<Row><Cell><Data ss:Type="String">${rankDisp}</Data></Cell><Cell><Data ss:Type="String">${r.pilot}</Data></Cell><Cell><Data ss:Type="Number">${r.elo}</Data></Cell><Cell><Data ss:Type="Number">${r.contestCount}</Data></Cell><Cell><Data ss:Type="String">${status}</Data></Cell></Row>`;
-        });
-        xml += `</Table></Worksheet>`;
-
-        activeContests.forEach(contest => {
-            let sheetName = contest.name.replace(/[\/\\\?\*\[\]:]/g, "").substring(0, 31);
-            xml += `<Worksheet ss:Name="${sheetName}"><Table>`;
-            xml += `<Row><Cell><Data ss:Type="String">Position</Data></Cell><Cell><Data ss:Type="String">Pilote</Data></Cell><Cell><Data ss:Type="String">Total Points</Data></Cell><Cell><Data ss:Type="String">Pourcentage</Data></Cell><Cell><Data ss:Type="String">Cote Elo (apres)</Data></Cell></Row>`;
-            
-            contest.details.forEach(row => {
-                let pos = row[0];
-                let name = row[contest.headers.indexOf("Pilot_Name")] || "";
-                let points = row[contest.headers.indexOf("Total Points")] || "";
-                let percent = row[contest.headers.indexOf("Percent")] || "";
-                let upperName = name.toUpperCase();
-                let eloAfter = contest.postContestElos && contest.postContestElos[upperName] !== undefined 
-                    ? Math.round(contest.postContestElos[upperName]) 
-                    : '-';
-
-                xml += `<Row><Cell><Data ss:Type="String">${pos}</Data></Cell><Cell><Data ss:Type="String">${name}</Data></Cell><Cell><Data ss:Type="String">${points}</Data></Cell><Cell><Data ss:Type="String">${percent}%</Data></Cell><Cell><Data ss:Type="String">${eloAfter}</Data></Cell></Row>`;
-            });
-            xml += `</Table></Worksheet>`;
-        });
-
-        xml += `</Workbook>`;
-
-        let blob = new Blob([xml], { type: 'application/vnd.ms-excel' });
-        let url = URL.createObjectURL(blob);
-        let a = document.createElement('a');
-        a.href = url;
-        a.download = `Be_F3F_Saison_${selectedYear}_Global.xls`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-    }
-</script>
-
-</body>
-</html>
+        let years = [...new Set(rawContestsData.map(c => c.year))].
