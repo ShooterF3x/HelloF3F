@@ -344,4 +344,4 @@ Le sélecteur de saison permet de consulter chaque année séparément. **Chaque
 
 ## En résumé
 
-> Be F3F transforme chaque concours en une série de duels entre tous les pilotes présents, puis calcule, sur l'ensemble de la saison et de façon indépendante de l'ordre d'import, une cote Elo qui mesure la force relative de chacun. Un classement officiel exige au moins 3 concours, et l'évolution chronologique de chaque pilote reste consultable en parallèle.
+> HelloF3F transforme chaque concours en une série de duels entre tous les pilotes présents, puis calcule, sur l'ensemble de la saison et de façon indépendante de l'ordre d'import, une cote Elo qui mesure la force relative de chacun. Un classement officiel exige au moins 3 concours, et l'évolution chronologique de chaque pilote reste consultable en parallèle.
