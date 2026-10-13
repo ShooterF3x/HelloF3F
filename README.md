@@ -1,6 +1,6 @@
-# Be F3F — Classement Elo pour le F3F
+# HelloF3F — Classement Elo pour le F3F
 
-**Be F3F** est une application web (un seul fichier HTML, sans serveur) qui calcule un classement saisonnier des pilotes de F3F à partir des résultats exportés de **F3X Vault**. Au lieu d'additionner des points de concours, elle s'appuie sur un système de **cote Elo** : chaque pilote est évalué par rapport à ceux qu'il a battus ou perdus contre, concours après concours.
+**HelloF3F** est une application web (un seul fichier HTML, sans serveur) qui calcule un classement saisonnier des pilotes de F3F à partir des résultats exportés de **F3X Vault**. Au lieu d'additionner des points de concours, elle s'appuie sur un système de **cote Elo** : chaque pilote est évalué par rapport à ceux qu'il a battus ou perdus contre, concours après concours.
 
 Ce document explique **entièrement** le mode de calcul.
 
