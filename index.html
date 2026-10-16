@@ -665,6 +665,7 @@
         tempRows.forEach(item => {
             let pctScore = 0;
             if (winnerPoints > 0 && item.pts > 0) {
+                // Score exact en % (ex: 93.180555%)
                 pctScore = (item.pts / winnerPoints) * 100;
             } else if (item.pct > 0) {
                 pctScore = item.pct;
@@ -794,7 +795,7 @@
                                 let eA = 1 / (1 + Math.pow(10, (rB - rA) / 400));
                                 let sVal = (sA > sB) ? 1 : ((sA === sB) ? 0.5 : 0);
 
-                                deltaElos[pA] += (K_ROUND * 0.1 / (N - 1)) * (sVal - eA);
+                                deltaElos[pA] += (K_ROUND * 0.35 / (N - 1)) * (sVal - eA);
                             }
                         }
                     });
@@ -813,8 +814,8 @@
                                 let eA = 1 / (1 + Math.pow(10, (rB - rA) / 400));
                                 let sA = (c.scores[pA] === c.scores[pB]) ? 0.5 : 1;
 
-                                deltaElos[pA] += K_eff * (sA - eA) * 0.1;
-                                deltaElos[pB] += K_eff * ((1 - sA) - (1 - eA)) * 0.1;
+                                deltaElos[pA] += K_eff * (sA - eA) * 0.35;
+                                deltaElos[pB] += K_eff * ((1 - sA) - (1 - eA)) * 0.35;
                             }
                         }
                     }
@@ -1029,7 +1030,7 @@
 
         let modeTitle = isElo ? "Classement Elo" : "Résultats Officiels FAI / FFAM";
 
-        let cHtml = `<h2>${contest.name} — ${modeTitle}</h2>`;
+        let cHtml = `2>${contest.name} — ${modeTitle}</h2>`;
         cHtml += `<div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:15px; font-size:13px;">
             <span>Date : <b>${contest.date.toLocaleDateString()}</b></span> &bull; 
             <span>Manches : <b>${contest.rounds}</b></span> &bull; 
@@ -1237,12 +1238,19 @@
         let rawScores = history.map(h => h.raw);
         let eloScores = history.map(h => h.eloAfter);
         
-        let minRaw = Math.floor((Math.min(...rawScores, 850) - 10) / 50) * 50;
-        let maxRaw = Math.ceil((Math.max(...rawScores, 1020) + 10) / 50) * 50;
+        let minRawVal = Math.min(...rawScores);
+        let maxRawVal = Math.max(...rawScores);
+        let spanRaw = Math.max(30, maxRawVal - minRawVal);
+        let minRaw = Math.max(0, Math.floor((minRawVal - spanRaw * 0.25) / 10) * 10);
+        let maxRaw = Math.min(1000, Math.ceil((maxRawVal + spanRaw * 0.25) / 10) * 10);
+        if (maxRaw <= minRaw) maxRaw = minRaw + 50;
 
-        let minElo = Math.floor((Math.min(...eloScores, 1150) - 50) / 100) * 100;
-        let maxElo = Math.ceil((Math.max(...eloScores, 1250) + 50) / 100) * 100;
-        if (minElo === maxElo) { maxElo += 100; minElo -= 100; }
+        let minEloVal = Math.min(...eloScores);
+        let maxEloVal = Math.max(...eloScores);
+        let spanElo = Math.max(40, maxEloVal - minEloVal);
+        let minElo = Math.floor((minEloVal - spanElo * 0.25) / 20) * 20;
+        let maxElo = Math.ceil((maxEloVal + spanElo * 0.25) / 20) * 20;
+        if (maxElo <= minElo) maxElo = minElo + 50;
 
         let dx = history.length > 1 ? (width - padding * 2) / (history.length - 1) : 0;
         let dyRaw = (height - padding * 2) / (maxRaw - minRaw || 1);
