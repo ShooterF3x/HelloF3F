@@ -825,15 +825,6 @@
             });
         }
 
-        activeContests.forEach(c => {
-            let rawObj = rawContestsData.find(r => r.name === c.name && r.date.getTime() === c.date.getTime());
-            if (rawObj) {
-                rawObj.idc = c.idc;
-                rawObj.contestElo = c.contestElo;
-                rawObj.quality = c.quality;
-            }
-        });
-
         let trackingElo = {};
         seasonPilots.forEach(p => trackingElo[p] = 1200);
         currentSeasonHistories = {};
@@ -1280,19 +1271,19 @@
         let maxElo = Math.ceil((Math.max(...eloScores, 1250) + 50) / 100) * 100;
         if (minElo === maxElo) { maxElo += 100; minElo -= 100; }
 
-        let dx = history.length > 1 ? (width - padding * 2) / (history.length - 1) : 0;
+        let dx = (width - padding * 2) / Math.max(history.length - 1, 1);
         let dyRaw = (height - padding * 2) / (maxRaw - minRaw || 1);
         let dyElo = (height - padding * 2) / (maxElo - minElo || 1);
 
         let rawPoints = history.map((h, i) => ({
-            x: history.length === 1 ? width / 2 : padding + i * dx,
+            x: padding + i * dx,
             y: height - padding - (h.raw - minRaw) * dyRaw,
             val: h.raw,
             name: h.contestName
         }));
 
         let eloPoints = history.map((h, i) => ({
-            x: history.length === 1 ? width / 2 : padding + i * dx,
+            x: padding + i * dx,
             y: height - padding - (h.eloAfter - minElo) * dyElo,
             val: h.eloAfter,
             name: h.contestName
@@ -1322,23 +1313,10 @@
         }
 
         rawPoints.forEach((p, i) => {
-            let ep = eloPoints[i];
-
             svg += `<circle cx="${p.x}" cy="${p.y}" r="4" fill="#e53e3e" stroke="#fff" stroke-width="1.5"/>`;
+            let ep = eloPoints[i];
             svg += `<circle cx="${ep.x}" cy="${ep.y}" r="5" fill="#1b365d" stroke="#fff" stroke-width="1.5"/>`;
-
-            let faYLabel, eloYLabel;
-            if (p.y < ep.y) {
-                faYLabel = p.y - 10;
-                eloYLabel = ep.y + 16;
-            } else {
-                eloYLabel = ep.y - 10;
-                faYLabel = p.y + 16;
-            }
-
-            svg += `<text x="${p.x}" y="${faYLabel}" font-size="10" fill="#e53e3e" font-weight="700" text-anchor="middle">${p.val} pts</text>`;
-            svg += `<text x="${ep.x}" y="${eloYLabel}" font-size="10" fill="#1b365d" font-weight="700" text-anchor="middle">${ep.val} pts</text>`;
-
+            svg += `<text x="${ep.x}" y="${ep.y - 10}" font-size="10" fill="#1b365d" font-weight="700" text-anchor="middle">${ep.val} pts</text>`;
             svg += `<text x="${p.x}" y="${height - padding + 18}" font-size="10" fill="#4a5568" text-anchor="middle" transform="rotate(-10 ${p.x} ${height - padding + 18})">${p.name}</text>`;
         });
 
@@ -1346,7 +1324,7 @@
 
         svg += `<div class="legend">
             <div class="legend-item"><span class="legend-color" style="background: #1b365d;"></span> <b>Évolution Elo (Axe droit)</b></div>
-            <div class="legend-item"><span class="legend-color" style="background: #e53e3e; border-top: 2px dashed #e53e3e; height:0;"></span> <b>Points FAI / CdF sur 1000 (Axe gauche)</b></div>
+            <div class="legend-item"><span class="legend-color" style="background: #e53e3e; border-top: 2px dashed #e53e3e; height:0;"></span> <b>Score Brut F3X Vault (Axe gauche)</b></div>
         </div>`;
 
         return svg;
