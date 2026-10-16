@@ -362,7 +362,7 @@
 
             <div class="ranking-mode-toggle" title="Basculer entre le classement Elo et le classement FFAM">
                 <button id="btnSwitchElo" class="switch-btn active" onclick="setRankingMode('elo')">🏆 Cote Elo</button>
-                <button id="btnSwitchFFAM" class="switch-btn" onclick="setRankingMode('ffam')">🇫🇷 FFAM / FAI (%)</button>
+                <button id="btnSwitchFFAM" class="switch-btn" onclick="setRankingMode('ffam')">🇫🇷 FFAM / CdF (/1000)</button>
             </div>
         </div>
         <div class="controls-right">
@@ -621,6 +621,9 @@
         let colIdx = { name: -1, percent: -1, points: -1 };
         let roundIndices = [];
 
+        let winnerPoints = 0;
+        let tempRows = [];
+
         lines.forEach(line => {
             if (!line.trim()) return;
             const cols = line.split(',').map(c => c.replace(/^"|"$/g, '').trim());
@@ -650,25 +653,34 @@
 
             if (headerFound && colIdx.name > -1 && cols[colIdx.name]) {
                 let pilotName = cols[colIdx.name].toUpperCase();
-                let pctScore = 0;
-                if (colIdx.percent > -1 && !isNaN(parseFloat(cols[colIdx.percent]))) {
-                    pctScore = parseFloat(cols[colIdx.percent]);
-                } else if (colIdx.points > -1 && !isNaN(parseFloat(cols[colIdx.points]))) {
-                    pctScore = parseFloat(cols[colIdx.points]) / 10.0;
-                }
+                let pts = colIdx.points > -1 ? parseFloat(cols[colIdx.points]) : 0;
+                let pct = colIdx.percent > -1 ? parseFloat(cols[colIdx.percent]) : 0;
 
-                if (pilotName && pctScore > 0) {
-                    pilotScores[pilotName] = pctScore;
-                    pilotDetails.push(cols);
+                if (pts > winnerPoints) winnerPoints = pts;
+                tempRows.push({ pilotName, pts, pct, cols });
+            }
+        });
 
-                    roundIndices.forEach(rObj => {
-                        let val = parseFloat(cols[rObj.index]);
-                        if (!isNaN(val) && val > 0) {
-                            if (!pilotRoundScores[rObj.name]) pilotRoundScores[rObj.name] = {};
-                            pilotRoundScores[rObj.name][pilotName] = val;
-                        }
-                    });
-                }
+        tempRows.forEach(item => {
+            let pctScore = 0;
+            if (winnerPoints > 0 && item.pts > 0) {
+                // Score exact en % (ex: 93.180555%)
+                pctScore = (item.pts / winnerPoints) * 100;
+            } else if (item.pct > 0) {
+                pctScore = item.pct;
+            }
+
+            if (item.pilotName && pctScore > 0) {
+                pilotScores[item.pilotName] = pctScore;
+                pilotDetails.push(item.cols);
+
+                roundIndices.forEach(rObj => {
+                    let val = parseFloat(item.cols[rObj.index]);
+                    if (!isNaN(val) && val > 0) {
+                        if (!pilotRoundScores[rObj.name]) pilotRoundScores[rObj.name] = {};
+                        pilotRoundScores[rObj.name][item.pilotName] = val;
+                    }
+                });
             }
         });
 
@@ -902,7 +914,7 @@
                 }
             });
 
-            // Règlement FFAM / FAI : conservation des 4 meilleurs résultats (pourcentages)
+            // Règlement FFAM / CdF : conservation des min(N, 4) meilleurs résultats
             let best4Scores = [...allScores].sort((a, b) => b - a).slice(0, 4);
             let sumBest4Percent = best4Scores.reduce((a, b) => a + b, 0);
             let avgBest4Percent = best4Scores.length > 0 ? (sumBest4Percent / best4Scores.length) : 0;
@@ -919,7 +931,9 @@
                 pilot,
                 cote: finalEloVal,
                 elo: finalEloVal,
-                sumPercent: sumBest4Percent,
+                sumPercent: sumBest4Percent, // Cumul % des 4 meilleurs
+                sumPoints1000: sumBest4Percent * 10, // Cumul en points sur base 4000
+                score1000: 0, // Calculé ci-dessous
                 sumTotalPercent: sumPercent,
                 avgPercent: avgBest4Percent,
                 avgTotalPercent: avgPercent,
@@ -928,6 +942,21 @@
                 isOfficial
             });
             currentSeasonHistories[pilot] = history;
+        });
+
+        // Normalisation officielle sur 1000 par rapport au 1er pilote
+        let leaderObj = [...currentSeasonRankings]
+            .filter(r => r.isOfficial)
+            .sort((a, b) => b.sumPercent - a.sumPercent)[0];
+
+        if (!leaderObj) {
+            leaderObj = [...currentSeasonRankings].sort((a, b) => b.sumPercent - a.sumPercent)[0];
+        }
+
+        let leaderScore = leaderObj ? leaderObj.sumPercent : 1;
+
+        currentSeasonRankings.forEach(r => {
+            r.score1000 = leaderScore > 0 ? (r.sumPercent / leaderScore) * 1000 : 0;
         });
 
         buildUI();
@@ -1093,11 +1122,11 @@
 
         let titleText = isElo 
             ? `Classement Général Elo Global — Saison ${yearVal}`
-            : `Classement Général FFAM / FAI (Cumul des Pourcentages) — Saison ${yearVal}`;
+            : `Classement Général Officiel FFAM / CdF — Saison ${yearVal}`;
 
         let subtitleText = isElo
-            ? `Évalue la force pure et la régularité par duels croisés (indépendant du volume de courses) &bull; Minimum ${MIN_CONTESTS_REQUIRED} concours.`
-            : `Cumul officiel des 4 meilleurs pourcentages obtenus sur la saison (Règlement FFAM/FAI) &bull; Minimum ${MIN_CONTESTS_REQUIRED} concours.`;
+            ? `Évalue la force pure et la régularité par duels croisés &bull; Minimum ${MIN_CONTESTS_REQUIRED} concours.`
+            : `Note officiellement ramenée sur 1000 pts (Leader = 1000 pts) &bull; Règle des 4 meilleurs concours (4/10) &bull; Minimum ${MIN_CONTESTS_REQUIRED} concours.`;
 
         let sortedRankings = [...currentSeasonRankings];
         sortedRankings.sort((a, b) => {
@@ -1114,9 +1143,9 @@
         genHtml += `<p style="font-size: 13px; color: var(--text-muted);">${subtitleText}</p>`;
         
         if (isElo) {
-            genHtml += '<table><tr><th>Rang</th><th>Pilote</th><th>Cote Elo</th><th>Cumul FFAM (4 meilleurs %)</th><th>Concours Disputés</th><th>Statut</th></tr>';
+            genHtml += '<table><tr><th>Rang</th><th>Pilote</th><th>Cote Elo</th><th>Note CdF (/1000)</th><th>Cumul 4/10 (Pts)</th><th>Concours</th><th>Statut</th></tr>';
         } else {
-            genHtml += '<table><tr><th>Rang</th><th>Pilote</th><th>Cumul FFAM (4 meilleurs %)</th><th>Moyenne (4 meilleurs)</th><th>Cote Elo</th><th>Concours Disputés</th><th>Statut</th></tr>';
+            genHtml += '<table><tr><th>Rang</th><th>Pilote</th><th>Note CdF (/1000)</th><th>Cumul 4/10 (Pts)</th><th>Moyenne %</th><th>Cote Elo</th><th>Concours</th><th>Statut</th></tr>';
         }
 
         let officialRank = 1;
@@ -1132,7 +1161,8 @@
                     <td><b>${rankDisplay}</b></td>
                     <td><span class="pilot-link" onclick="openPilotProfile('${r.pilot}')">${r.pilot}</span></td>
                     <td class="highlight"><b>${r.elo} pts</b></td>
-                    <td>${r.sumPercent.toFixed(2)} %</td>
+                    <td><b>${r.score1000.toFixed(2)}</b></td>
+                    <td>${r.sumPoints1000.toFixed(2)}</td>
                     <td>${r.contestCount}</td>
                     <td>${statusBadge}</td>
                 </tr>`;
@@ -1140,8 +1170,9 @@
                 genHtml += `<tr class="${rowClass}">
                     <td><b>${rankDisplay}</b></td>
                     <td><span class="pilot-link" onclick="openPilotProfile('${r.pilot}')">${r.pilot}</span></td>
-                    <td class="highlight"><b>${r.sumPercent.toFixed(2)} %</b></td>
-                    <td>${r.avgPercent.toFixed(2)} %</td>
+                    <td class="highlight"><b>${r.score1000.toFixed(2)}</b></td>
+                    <td><b>${r.sumPoints1000.toFixed(2)}</b> (${r.sumPercent.toFixed(2)}%)</td>
+                    <td>${r.avgPercent.toFixed(2)}%</td>
                     <td><b>${r.elo} pts</b></td>
                     <td>${r.contestCount}</td>
                     <td>${statusBadge}</td>
@@ -1209,8 +1240,9 @@
         if (rankObj) {
             let statusText = rankObj.isOfficial ? '<span style="color:#107c41; font-weight:500;">Officiel</span>' : '<span style="color:#d97706;">Non classé (< 3 concours)</span>';
             html += `<p style="font-size:13px; color:var(--text-muted);">
-                Cote Elo : <b class="highlight">${rankObj.elo} pts</b> &bull; 
-                Cumul FFAM (4 meilleurs) : <b>${rankObj.sumPercent.toFixed(2)} %</b> &bull; 
+                Note CdF : <b class="highlight">${rankObj.score1000.toFixed(2)} / 1000</b> &bull; 
+                Cumul 4/10 : <b>${rankObj.sumPoints1000.toFixed(2)} pts</b> (${rankObj.sumPercent.toFixed(2)}%) &bull; 
+                Cote Elo : <b>${rankObj.elo} pts</b> &bull; 
                 Concours : ${rankObj.contestCount} &bull; Statut : ${statusText}
             </p>`;
         }
@@ -1309,12 +1341,12 @@
          xmlns:html="http://www.w3.org/TR/REC-html40">`;
 
         xml += `<Worksheet ss:Name="Classements Généraux"><Table>`;
-        xml += `<Row><Cell><Data ss:Type="String">Pilote</Data></Cell><Cell><Data ss:Type="String">Cote Elo</Data></Cell><Cell><Data ss:Type="String">Cumul FFAM (4 meilleurs %)</Data></Cell><Cell><Data ss:Type="String">Moyenne (4 meilleurs)</Data></Cell><Cell><Data ss:Type="String">Concours Disputes</Data></Cell><Cell><Data ss:Type="String">Statut</Data></Cell></Row>`;
+        xml += `<Row><Cell><Data ss:Type="String">Pilote</Data></Cell><Cell><Data ss:Type="String">Note CdF (/1000)</Data></Cell><Cell><Data ss:Type="String">Cumul 4/10 (Pts)</Data></Cell><Cell><Data ss:Type="String">Cote Elo</Data></Cell><Cell><Data ss:Type="String">Moyenne % / Course</Data></Cell><Cell><Data ss:Type="String">Concours Disputes</Data></Cell><Cell><Data ss:Type="String">Statut</Data></Cell></Row>`;
         
-        let sortedExport = [...currentSeasonRankings].sort((a,b) => b.elo - a.elo);
+        let sortedExport = [...currentSeasonRankings].sort((a,b) => b.sumPercent - a.sumPercent);
         sortedExport.forEach(r => {
             let status = r.isOfficial ? 'Officiel' : 'Non classe';
-            xml += `<Row><Cell><Data ss:Type="String">${r.pilot}</Data></Cell><Cell><Data ss:Type="Number">${r.elo}</Data></Cell><Cell><Data ss:Type="Number">${r.sumPercent.toFixed(2)}</Data></Cell><Cell><Data ss:Type="Number">${r.avgPercent.toFixed(2)}</Data></Cell><Cell><Data ss:Type="Number">${r.contestCount}</Data></Cell><Cell><Data ss:Type="String">${status}</Data></Cell></Row>`;
+            xml += `<Row><Cell><Data ss:Type="String">${r.pilot}</Data></Cell><Cell><Data ss:Type="Number">${r.score1000.toFixed(2)}</Data></Cell><Cell><Data ss:Type="Number">${r.sumPoints1000.toFixed(2)}</Data></Cell><Cell><Data ss:Type="Number">${r.elo}</Data></Cell><Cell><Data ss:Type="Number">${r.avgPercent.toFixed(2)}</Data></Cell><Cell><Data ss:Type="Number">${r.contestCount}</Data></Cell><Cell><Data ss:Type="String">${status}</Data></Cell></Row>`;
         });
         xml += `</Table></Worksheet>`;
 
