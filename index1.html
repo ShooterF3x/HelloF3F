@@ -1,0 +1,1347 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HelloF3F</title>
+    <style>
+        :root {
+            --primary: #1b365d;
+            --primary-hover: #122540;
+            --accent: #c0392b;
+            --bg-body: #f4f6f9;
+            --bg-card: #ffffff;
+            --text-main: #2c3e50;
+            --text-muted: #6c7a89;
+            --border-color: #dce1e5;
+        }
+
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            background-color: var(--bg-body); 
+            color: var(--text-main); 
+            margin: 0; 
+            padding: 30px 20px; 
+            line-height: 1.5;
+        }
+
+        .container { 
+            max-width: 1140px; 
+            margin: 0 auto; 
+            background: var(--bg-card); 
+            padding: 40px; 
+            border-radius: 8px; 
+            box-shadow: 0 4px 16px rgba(0,0,0,0.06); 
+            border-top: 5px solid var(--primary);
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+            position: relative;
+        }
+
+        .brand-container {
+            text-align: left;
+        }
+
+        .brand-title { 
+            font-size: 34px; 
+            font-weight: 800; 
+            background: linear-gradient(135deg, #1b365d 0%, #2980b9 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin: 0 0 4px 0; 
+            letter-spacing: -1px;
+            text-transform: uppercase;
+        }
+
+        p.subtitle {
+            color: var(--text-muted);
+            font-size: 13.5px;
+            margin: 0;
+            font-weight: 500;
+        }
+
+        .menu-container {
+            position: relative;
+        }
+
+        .hamburger-btn {
+            background: #f8fafc;
+            border: 1px solid var(--border-color);
+            padding: 10px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            width: 40px;
+            height: 38px;
+            transition: background 0.2s;
+        }
+
+        .hamburger-btn:hover {
+            background: #edf2f7;
+        }
+
+        .hamburger-line {
+            width: 100%;
+            height: 3px;
+            background-color: var(--primary);
+            border-radius: 2px;
+            transition: all 0.3s ease;
+        }
+
+        .dropdown-menu {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: 48px;
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+            min-width: 260px;
+            z-index: 100;
+            overflow: hidden;
+            animation: fadeIn 0.15s ease-out;
+        }
+
+        .dropdown-menu.show {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .dropdown-section-title {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            background: #f8fafc;
+            padding: 8px 14px;
+            border-bottom: 1px solid var(--border-color);
+            letter-spacing: 0.5px;
+        }
+
+        .menu-item {
+            padding: 10px 16px;
+            font-size: 13.5px;
+            font-weight: 500;
+            color: var(--text-main);
+            cursor: pointer;
+            border-bottom: 1px solid #f1f5f9;
+            transition: background 0.15s, color 0.15s;
+            display: block;
+            text-align: left;
+            width: 100%;
+            background: none;
+            border-left: none;
+            border-right: none;
+            border-top: none;
+        }
+
+        .menu-item:last-child {
+            border-bottom: none;
+        }
+
+        .menu-item:hover {
+            background: #f0f4f8;
+            color: var(--primary);
+        }
+
+        .menu-item.active {
+            background: #eef2f7;
+            color: var(--primary);
+            font-weight: 600;
+        }
+        
+        .upload-area { 
+            border: 2px dashed var(--border-color); 
+            border-radius: 6px; 
+            padding: 25px; 
+            text-align: center; 
+            background: #fafbfc; 
+            margin: 15px 0 25px 0; 
+            cursor: pointer; 
+            transition: all 0.2s ease; 
+        }
+        .upload-area:hover { 
+            border-color: var(--primary); 
+            background: #f0f4f8; 
+        }
+        .upload-area h3 {
+            margin: 0 0 5px 0;
+            font-size: 15px;
+            color: var(--primary);
+        }
+        .upload-area p {
+            margin: 0;
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+        input[type="file"] { display: none; }
+
+        .controls-bar { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            background: #f8fafc; 
+            padding: 12px 18px; 
+            border: 1px solid var(--border-color);
+            border-radius: 6px; 
+            margin-top: 10px; 
+            flex-wrap: wrap; 
+            gap: 15px; 
+        }
+
+        .controls-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 14px;
+            flex-wrap: wrap;
+        }
+
+        .controls-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .ranking-mode-toggle {
+            display: inline-flex;
+            align-items: center;
+            background: #edf2f7;
+            padding: 3px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            margin-left: 10px;
+        }
+
+        .switch-btn {
+            padding: 5px 12px;
+            font-size: 13px;
+            font-weight: 600;
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .switch-btn.active {
+            background: white;
+            color: var(--primary);
+            box-shadow: 0 1px 4px rgba(0,0,0,0.12);
+        }
+
+        .switch-btn:hover:not(.active) {
+            color: var(--primary-hover);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            font-size: 11.5px;
+            font-weight: 600;
+            border-radius: 4px;
+            line-height: 1.3;
+        }
+
+        .badge-success { background: #e6f4ea; color: #137333; border: 1px solid #ceedd5; }
+        .badge-info { background: #e8f0fe; color: #1a73e8; border: 1px solid #d2e3fc; }
+        .badge-warning { background: #fef7e0; color: #b06000; border: 1px solid #fde293; }
+        .badge-danger { background: #fce8e6; color: #c5221f; border: 1px solid #fad2cf; }
+        .badge-idc { background: #f1f5f9; color: var(--primary); border: 1px solid #cbd5e1; font-weight: 700; }
+
+        select { 
+            padding: 6px 12px; 
+            font-size: 14px; 
+            border-radius: 4px; 
+            border: 1px solid var(--border-color); 
+            background: white;
+            color: var(--text-main);
+            font-weight: 500; 
+        }
+        
+        button.action-btn {
+            padding: 7px 14px;
+            font-size: 13px;
+            font-weight: 500;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-excel { background: #107c41; color: white; }
+        .btn-excel:hover { background: #0b5329; }
+
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-hover); }
+
+        .btn-danger { background: var(--accent); color: white; padding: 5px 10px; font-size: 12px; border-radius: 4px; border: none; cursor: pointer; }
+        .btn-danger:hover { background: #a93226; }
+
+        .tab-content { display: none; padding-top: 20px; }
+        .tab-content.active { display: block; }
+
+        h2 {
+            font-size: 18px;
+            color: var(--primary);
+            margin-top: 0;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 8px;
+        }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13.5px; }
+        th, td { padding: 10px 14px; border: 1px solid var(--border-color); text-align: left; }
+        th { background-color: #f8fafc; color: #334155; font-weight: 600; }
+        tr:nth-child(even) { background-color: #fbfbfc; }
+        .highlight { font-weight: 600; color: var(--accent); }
+        .nc-row { color: #94a3b8; font-style: italic; background-color: #ffffff !important; }
+        .status-msg { font-weight: 500; margin-bottom: 15px; text-align: center; font-size: 14px; color: var(--primary); }
+        .scrollable-table { max-height: 500px; overflow-y: auto; display: block; border: 1px solid var(--border-color); border-radius: 4px; }
+
+        .pilot-link { color: #0066cc; cursor: pointer; text-decoration: none; font-weight: 500; }
+        .pilot-link:hover { text-decoration: underline; }
+        .profile-container { display: flex; flex-wrap: wrap; gap: 25px; margin-top: 15px; }
+        .profile-sidebar { flex: 1; min-width: 240px; background: #fafbfc; border: 1px solid var(--border-color); padding: 15px; border-radius: 4px; max-height: 550px; overflow-y: auto; }
+        .profile-main { flex: 2; min-width: 400px; background: white; border: 1px solid var(--border-color); padding: 20px; border-radius: 4px; }
+        .pilot-item { padding: 7px 10px; cursor: pointer; border-bottom: 1px solid #edf2f7; font-size: 13px; color: #4a5568; }
+        .pilot-item:hover { background: #edf2f7; color: var(--primary); border-radius: 3px; }
+        .pilot-item.active { background: var(--primary); color: white; font-weight: 500; border-radius: 3px; }
+        
+        .svg-chart { width: 100%; height: 320px; background: #fafbfc; border: 1px solid var(--border-color); border-radius: 4px; margin-top: 15px; }
+        .legend { display: flex; gap: 20px; font-size: 12px; margin-top: 12px; align-items: center; color: var(--text-muted); }
+        .legend-item { display: flex; align-items: center; gap: 6px; }
+        .legend-color { width: 14px; height: 3px; display: inline-block; }
+
+        .audit-card { background: #fff; border: 1px solid var(--border-color); border-radius: 6px; padding: 16px; margin-bottom: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.02); }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <div class="brand-container">
+            <h1 class="brand-title">HelloF3F</h1>
+            <p class="subtitle">Classement officiel FFAM &bull; Cote Elo &bull; Indice IDC &bull; Équité Météo</p>
+        </div>
+        
+        <div class="menu-container">
+            <button class="hamburger-btn" onclick="toggleMenu(event)" title="Menu de navigation">
+                <span class="hamburger-line"></span>
+                <span class="hamburger-line"></span>
+                <span class="hamburger-line"></span>
+            </button>
+            <div id="dropdownMenu" class="dropdown-menu"></div>
+        </div>
+    </header>
+
+    <div id="status" class="status-msg">Connexion à GitHub...</div>
+
+    <div class="controls-bar" id="controlsBar" style="display:none;">
+        <div class="controls-left">
+            <label for="yearSelect"><b>Saison :</b></label>
+            <select id="yearSelect" onchange="renderActiveSeason()"></select>
+            <span id="loadedCount" style="color: var(--text-muted); font-size: 13px;"></span>
+
+            <div class="ranking-mode-toggle" title="Basculer entre le classement Elo et le classement FFAM">
+                <button id="btnSwitchElo" class="switch-btn active" onclick="setRankingMode('elo')">🏆 Cote Elo</button>
+                <button id="btnSwitchFFAM" class="switch-btn" onclick="setRankingMode('ffam')">🇫🇷 FFAM / FAI (%)</button>
+            </div>
+        </div>
+        <div class="controls-right">
+            <button class="action-btn btn-excel" onclick="exportToExcelMultiSheet()">Exporter Excel</button>
+            <button class="action-btn btn-primary" onclick="loadContestsFromGitHub()">Actualiser GitHub</button>
+        </div>
+    </div>
+
+    <div id="tabContentsContainer"></div>
+</div>
+
+<script>
+    const GITHUB_OWNER = "ShooterF3x";
+    const GITHUB_REPO = "HelloF3F";
+
+    let rawContestsData = [];
+    let currentSeasonRankings = [];
+    let currentSeasonHistories = {};
+    let activeContests = [];
+    let menuItemsConfig = [];
+    let activeTabId = 'tab-general';
+    let currentRankingMode = 'elo';
+    const MIN_CONTESTS_REQUIRED = 3;
+
+    window.onload = function() {
+        window.addEventListener('click', function(e) {
+            if (!e.target.closest('.menu-container')) {
+                document.getElementById('dropdownMenu').classList.remove('show');
+            }
+        });
+
+        loadContestsFromGitHub();
+    };
+
+    function toggleMenu(e) {
+        e.stopPropagation();
+        document.getElementById('dropdownMenu').classList.toggle('show');
+    }
+
+    function setRankingMode(mode) {
+        currentRankingMode = mode;
+        document.getElementById('btnSwitchElo').classList.toggle('active', mode === 'elo');
+        document.getElementById('btnSwitchFFAM').classList.toggle('active', mode === 'ffam');
+        renderRankingTable();
+    }
+
+    async function loadContestsFromGitHub() {
+        document.getElementById('status').innerText = "Récupération automatique des fichiers CSV sur GitHub...";
+        rawContestsData = [];
+
+        if (!GITHUB_OWNER || !GITHUB_REPO) {
+            document.getElementById('status').innerText = "Erreur : GITHUB_OWNER ou GITHUB_REPO non renseignés.";
+            renderEmptyAdminView();
+            return;
+        }
+
+        try {
+            const dataUrl = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/data`;
+            let resData = await fetch(dataUrl);
+            
+            if (!resData.ok) {
+                throw new Error("Impossible d'accéder au dossier 'data' sur GitHub.");
+            }
+
+            let items = await resData.json();
+            let yearDirs = items.filter(item => item.type === 'dir');
+
+            if (yearDirs.length === 0) {
+                document.getElementById('status').innerText = "Aucun sous-dossier d'année trouvé dans 'data'.";
+                renderEmptyAdminView();
+                return;
+            }
+
+            for (let yearDir of yearDirs) {
+                let yearRes = await fetch(yearDir.url);
+                if (yearRes.ok) {
+                    let files = await yearRes.json();
+                    let csvFiles = files.filter(f => f.name.endsWith('.csv'));
+                    
+                    let promises = csvFiles.map(async (file) => {
+                        let fRes = await fetch(file.download_url);
+                        if (fRes.ok) {
+                            let text = await fRes.text();
+                            parseVaultCSV(text, file.name);
+                        }
+                    });
+                    await Promise.all(promises);
+                }
+            }
+
+            if (rawContestsData.length > 0) {
+                rawContestsData.sort((a, b) => a.date.getTime() - b.date.getTime());
+                localStorage.setItem('bef3f_data', JSON.stringify(rawContestsData));
+                document.getElementById('status').innerText = `${rawContestsData.length} concours chargé(s) automatiquement depuis GitHub.`;
+                populateYearSelector();
+                renderActiveSeason();
+            } else {
+                document.getElementById('status').innerText = "Aucun fichier .csv trouvé.";
+                renderEmptyAdminView();
+            }
+
+        } catch (err) {
+            console.error(err);
+            document.getElementById('status').innerText = "Erreur de chargement GitHub (Vérifiez que le dépôt est public).";
+            
+            let savedData = localStorage.getItem('bef3f_data');
+            if (savedData) {
+                try {
+                    let parsed = JSON.parse(savedData);
+                    rawContestsData = parsed.map(c => ({ ...c, date: new Date(c.date) }));
+                    if (rawContestsData.length > 0) {
+                        populateYearSelector();
+                        renderActiveSeason();
+                        return;
+                    }
+                } catch(e) {}
+            }
+            renderEmptyAdminView();
+        }
+    }
+
+    function handleFileSelect(event) {
+        const files = event.target.files;
+        if (files.length === 0) return;
+        
+        let filesProcessed = 0;
+        document.getElementById('status').innerText = `Analyse de ${files.length} fichier(s)...`;
+
+        Array.from(files).forEach(file => {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                parseVaultCSV(e.target.result, file.name);
+                filesProcessed++;
+                if (filesProcessed === files.length) {
+                    rawContestsData.sort((a, b) => a.date.getTime() - b.date.getTime());
+                    localStorage.setItem('bef3f_data', JSON.stringify(rawContestsData));
+                    document.getElementById('status').innerText = `Fichiers importés avec succès.`;
+                    populateYearSelector();
+                    renderActiveSeason();
+                }
+            };
+            reader.readAsText(file);
+        });
+    }
+
+    function deleteContest(indexInRaw) {
+        let contestName = rawContestsData[indexInRaw].name;
+        if (confirm(`Supprimer le concours "${contestName}" de la mémoire ?`)) {
+            rawContestsData.splice(indexInRaw, 1);
+            localStorage.setItem('bef3f_data', JSON.stringify(rawContestsData));
+            if (rawContestsData.length === 0) {
+                document.getElementById('controlsBar').style.display = 'none';
+                renderEmptyAdminView();
+            } else {
+                populateYearSelector();
+                renderActiveSeason();
+            }
+        }
+    }
+
+    function renderEmptyAdminView() {
+        let contentsContainer = document.getElementById('tabContentsContainer');
+        contentsContainer.innerHTML = '';
+        document.getElementById('controlsBar').style.display = 'none';
+
+        menuItemsConfig = [{ label: 'Administration', targetId: 'tab-manage', group: 'Général' }];
+        buildDropdownMenu();
+
+        let manageDiv = document.createElement('div');
+        manageDiv.id = 'tab-manage';
+        manageDiv.className = 'tab-content active';
+        manageDiv.innerHTML = `
+            <h2>Aucun concours chargé</h2>
+            <p style="font-size:13px; color:var(--text-muted);">Vérifiez que votre dépôt GitHub est public et que vos CSV sont dans les dossiers <code>data/2025</code>, <code>data/2026</code>, etc.</p>
+            <div class="upload-area" onclick="document.getElementById('csvFiles').click()">
+                <h3>📁 Cliquez ou glissez vos fichiers CSV ici</h3>
+                <input type="file" id="csvFiles" multiple accept=".csv" onchange="handleFileSelect(event)">
+            </div>
+        `;
+        contentsContainer.appendChild(manageDiv);
+    }
+
+    function calculateContestQuality(contest) {
+        let roundNames = Object.keys(contest.roundScores || {});
+        let correlations = [];
+        
+        if (roundNames.length > 0 && Object.keys(contest.scores || {}).length >= 3) {
+            let pilots = Object.keys(contest.scores);
+            let sortedPilots = [...pilots].sort((a,b) => contest.scores[b] - contest.scores[a]);
+            let finalRanks = {};
+            sortedPilots.forEach((p, idx) => finalRanks[p] = idx + 1);
+            
+            roundNames.forEach(rName => {
+                let rScores = contest.roundScores[rName];
+                let rPilots = Object.keys(rScores).filter(p => finalRanks[p] !== undefined);
+                if (rPilots.length >= 3) {
+                    let rSorted = [...rPilots].sort((a,b) => rScores[b] - rScores[a]);
+                    let rRanks = {};
+                    rSorted.forEach((p, idx) => rRanks[p] = idx + 1);
+                    
+                    let n = rPilots.length;
+                    let dSquareSum = 0;
+                    rPilots.forEach(p => {
+                        let diff = rRanks[p] - finalRanks[p];
+                        dSquareSum += diff * diff;
+                    });
+                    let rho = 1 - (6 * dSquareSum) / (n * (n * n - 1));
+                    if (!isNaN(rho)) correlations.push(rho);
+                }
+            });
+        }
+        
+        let meanRho = correlations.length > 0 ? (correlations.reduce((a,b)=>a+b, 0) / correlations.length) : 0.65;
+        let qualityPct = Math.round(Math.max(10, Math.min(99, meanRho * 100)));
+        
+        let label = "Moyenne";
+        let badgeClass = "badge-warning";
+        let color = "#b06000";
+        
+        if (qualityPct >= 75) {
+            label = "Excellente (Très équitable)";
+            badgeClass = "badge-success";
+            color = "#137333";
+        } else if (qualityPct >= 60) {
+            label = "Bonne";
+            badgeClass = "badge-info";
+            color = "#1a73e8";
+        } else if (qualityPct >= 45) {
+            label = "Moyenne (Aérologie variable)";
+            badgeClass = "badge-warning";
+            color = "#b06000";
+        } else {
+            label = "Faible (Loterie météo marquée)";
+            badgeClass = "badge-danger";
+            color = "#c5221f";
+        }
+        
+        return {
+            score: qualityPct,
+            label: label,
+            badgeClass: badgeClass,
+            color: color
+        };
+    }
+
+    function parseVaultCSV(text, fallbackName) {
+        const lines = text.split(/\r?\n/);
+        let contestName = fallbackName.replace('.csv', '');
+        let nbRounds = 12;
+        let contestDate = new Date();
+        let pilotScores = {};
+        let pilotRoundScores = {};
+        let pilotDetails = [];
+        let headerFound = false;
+        let rawHeaders = [];
+        let colIdx = { name: -1, percent: -1, points: -1 };
+        let roundIndices = [];
+
+        lines.forEach(line => {
+            if (!line.trim()) return;
+            const cols = line.split(',').map(c => c.replace(/^"|"$/g, '').trim());
+
+            if (cols[0] === "Event_Name" && cols[1]) contestName = cols[1];
+            if (cols[0] === "Number_Rounds" && cols[1]) nbRounds = parseInt(cols[1]);
+            if ((cols[0] === "End_Date" || cols[0] === "Start_Date") && cols[1]) {
+                let parsedDate = new Date(cols[1]);
+                if (!isNaN(parsedDate)) contestDate = parsedDate;
+            }
+
+            if (cols.includes("Pilot_Name") || cols.includes("Position")) {
+                headerFound = true;
+                rawHeaders = cols;
+                colIdx.name = cols.findIndex(c => c === "Pilot_Name");
+                colIdx.percent = cols.findIndex(c => c === "Percent");
+                colIdx.points = cols.findIndex(c => c === "Total Points");
+
+                roundIndices = [];
+                cols.forEach((h, idx) => {
+                    if (h.startsWith("Round ")) {
+                        roundIndices.push({ name: h, index: idx });
+                    }
+                });
+                return;
+            }
+
+            if (headerFound && colIdx.name > -1 && cols[colIdx.name]) {
+                let pilotName = cols[colIdx.name].toUpperCase();
+                let pctScore = 0;
+                if (colIdx.percent > -1 && !isNaN(parseFloat(cols[colIdx.percent]))) {
+                    pctScore = parseFloat(cols[colIdx.percent]);
+                } else if (colIdx.points > -1 && !isNaN(parseFloat(cols[colIdx.points]))) {
+                    pctScore = parseFloat(cols[colIdx.points]) / 10.0;
+                }
+
+                if (pilotName && pctScore > 0) {
+                    pilotScores[pilotName] = pctScore;
+                    pilotDetails.push(cols);
+
+                    roundIndices.forEach(rObj => {
+                        let val = parseFloat(cols[rObj.index]);
+                        if (!isNaN(val) && val > 0) {
+                            if (!pilotRoundScores[rObj.name]) pilotRoundScores[rObj.name] = {};
+                            pilotRoundScores[rObj.name][pilotName] = val;
+                        }
+                    });
+                }
+            }
+        });
+
+        if (Object.keys(pilotScores).length > 0) {
+            rawContestsData = rawContestsData.filter(c => !(c.name === contestName && c.date.getTime() === contestDate.getTime()));
+            
+            let contestObj = {
+                name: contestName,
+                date: contestDate,
+                year: contestDate.getFullYear(),
+                rounds: nbRounds,
+                scores: pilotScores,
+                roundScores: pilotRoundScores,
+                details: pilotDetails,
+                headers: rawHeaders,
+                idc: 1.0
+            };
+            contestObj.quality = calculateContestQuality(contestObj);
+            rawContestsData.push(contestObj);
+        }
+    }
+
+    function populateYearSelector() {
+        let years = [...new Set(rawContestsData.map(c => c.year))].sort((a,b) => b - a);
+        if (years.length === 0) return;
+        
+        let select = document.getElementById('yearSelect');
+        let currentVal = select.value;
+        select.innerHTML = '';
+        years.forEach(y => {
+            select.innerHTML += `<option value="${y}">Saison ${y}</option>`;
+        });
+        
+        if (currentVal && years.includes(parseInt(currentVal))) {
+            select.value = currentVal;
+        } else {
+            select.value = years[0];
+        }
+        document.getElementById('controlsBar').style.display = 'flex';
+    }
+
+    function renderActiveSeason() {
+        let select = document.getElementById('yearSelect');
+        if (!select || select.options.length === 0) return;
+        let selectedYear = parseInt(select.value);
+
+        activeContests = rawContestsData.map(c => ({
+            ...c,
+            scores: {...c.scores},
+            roundScores: {...c.roundScores},
+            details: [...c.details]
+        })).filter(c => c.year === selectedYear);
+
+        activeContests.sort((a, b) => a.date.getTime() - b.date.getTime());
+
+        document.getElementById('loadedCount').innerText = `(${activeContests.length} concours en ${selectedYear})`;
+
+        if (activeContests.length === 0) {
+            document.getElementById('tabContentsContainer').innerHTML = `<h2>Aucun concours enregistré pour la saison ${selectedYear}.</h2>`;
+            return;
+        }
+
+        let seasonPilots = new Set();
+        activeContests.forEach(c => {
+            Object.keys(c.scores).forEach(p => seasonPilots.add(p));
+        });
+
+        const K_ROUND = 24;
+
+        let pilotEloGlobal = {};
+        seasonPilots.forEach(p => pilotEloGlobal[p] = 1200);
+
+        for (let iter = 0; iter < 15; iter++) {
+            activeContests.forEach(c => {
+                let participants = Object.keys(c.scores);
+                let sumElo = participants.reduce((acc, p) => acc + (pilotEloGlobal[p] || 1200), 0);
+                c.contestElo = participants.length > 0 ? (sumElo / participants.length) : 1200;
+            });
+            let totalContestElos = activeContests.reduce((acc, c) => acc + c.contestElo, 0);
+            let meanNationalElo = activeContests.length > 0 ? (totalContestElos / activeContests.length) : 1200;
+
+            activeContests.forEach(c => {
+                c.idc = meanNationalElo > 0 ? (c.contestElo / meanNationalElo) : 1;
+                c.quality = calculateContestQuality(c);
+            });
+
+            let deltaElos = {};
+            seasonPilots.forEach(p => deltaElos[p] = 0);
+
+            activeContests.forEach(c => {
+                let rNames = Object.keys(c.roundScores);
+                if (rNames.length > 0) {
+                    rNames.forEach(rName => {
+                        let rScores = c.roundScores[rName];
+                        let participants = Object.keys(rScores);
+                        let N = participants.length;
+                        if (N < 2) return;
+
+                        for (let i = 0; i < N; i++) {
+                            let pA = participants[i];
+                            let sA = rScores[pA];
+                            let rA = pilotEloGlobal[pA] || 1200;
+
+                            for (let j = 0; j < N; j++) {
+                                if (i === j) continue;
+                                let pB = participants[j];
+                                let sB = rScores[pB];
+                                let rB = pilotEloGlobal[pB] || 1200;
+
+                                let eA = 1 / (1 + Math.pow(10, (rB - rA) / 400));
+                                let sVal = (sA > sB) ? 1 : ((sA === sB) ? 0.5 : 0);
+
+                                deltaElos[pA] += (K_ROUND * 0.1 / (N - 1)) * (sVal - eA);
+                            }
+                        }
+                    });
+                } else {
+                    let participants = Object.keys(c.scores);
+                    participants.sort((a, b) => c.scores[b] - c.scores[a]);
+                    let N = participants.length;
+                    if (N >= 2) {
+                        let K_eff = (300 * c.idc) / (N - 1);
+                        for (let i = 0; i < N; i++) {
+                            for (let j = i + 1; j < N; j++) {
+                                let pA = participants[i];
+                                let pB = participants[j];
+                                let rA = pilotEloGlobal[pA] || 1200;
+                                let rB = pilotEloGlobal[pB] || 1200;
+                                let eA = 1 / (1 + Math.pow(10, (rB - rA) / 400));
+                                let sA = (c.scores[pA] === c.scores[pB]) ? 0.5 : 1;
+
+                                deltaElos[pA] += K_eff * (sA - eA) * 0.1;
+                                deltaElos[pB] += K_eff * ((1 - sA) - (1 - eA)) * 0.1;
+                            }
+                        }
+                    }
+                }
+            });
+
+            seasonPilots.forEach(p => {
+                pilotEloGlobal[p] = Math.max(800, pilotEloGlobal[p] + deltaElos[p]);
+            });
+        }
+
+        let trackingElo = {};
+        seasonPilots.forEach(p => trackingElo[p] = 1200);
+        currentSeasonHistories = {};
+
+        activeContests.forEach(c => {
+            let rNames = Object.keys(c.roundScores);
+            if (rNames.length > 0) {
+                rNames.forEach(rName => {
+                    let rScores = c.roundScores[rName];
+                    let participants = Object.keys(rScores);
+                    let N = participants.length;
+                    if (N < 2) return;
+
+                    let newTracking = {...trackingElo};
+                    for (let i = 0; i < N; i++) {
+                        let pA = participants[i];
+                        let sA = rScores[pA];
+                        let rA = trackingElo[pA] || 1200;
+                        let delta = 0;
+
+                        for (let j = 0; j < N; j++) {
+                            if (i === j) continue;
+                            let pB = participants[j];
+                            let sB = rScores[pB];
+                            let rB = trackingElo[pB] || 1200;
+
+                            let eA = 1 / (1 + Math.pow(10, (rB - rA) / 400));
+                            let sVal = (sA > sB) ? 1 : ((sA === sB) ? 0.5 : 0);
+
+                            delta += (sVal - eA);
+                        }
+                        newTracking[pA] = (newTracking[pA] || 1200) + (K_ROUND / (N - 1)) * delta;
+                    }
+                    trackingElo = newTracking;
+                });
+            } else {
+                let participants = Object.keys(c.scores);
+                participants.sort((a, b) => c.scores[b] - c.scores[a]);
+                let N = participants.length;
+                if (N >= 2) {
+                    let K_eff = (300 * c.idc) / (N - 1);
+                    let snapshot = {...trackingElo};
+                    for (let i = 0; i < N; i++) {
+                        for (let j = i + 1; j < N; j++) {
+                            let pA = participants[i];
+                            let pB = participants[j];
+                            let rA = trackingElo[pA] || 1200;
+                            let rB = trackingElo[pB] || 1200;
+
+                            let eA = 1 / (1 + Math.pow(10, (rB - rA) / 400));
+                            let sA = (c.scores[pA] === c.scores[pB]) ? 0.5 : 1;
+
+                            snapshot[pA] = (snapshot[pA] || 1200) + K_eff * (sA - eA);
+                            snapshot[pB] = (snapshot[pB] || 1200) + K_eff * ((1 - sA) - (1 - eA));
+                        }
+                    }
+                    trackingElo = snapshot;
+                }
+            }
+            c.postContestElos = {...trackingElo};
+        });
+
+        currentSeasonRankings = [];
+        let pilotsArr = Array.from(seasonPilots);
+
+        pilotsArr.forEach(pilot => {
+            let contestCount = 0;
+            let sumPercent = 0;
+            let history = [];
+
+            activeContests.forEach(c => {
+                if (c.scores[pilot] !== undefined) {
+                    contestCount++;
+                    let pctScore = c.scores[pilot];
+                    sumPercent += pctScore;
+                    let eloAfter = Math.round(c.postContestElos && c.postContestElos[pilot] !== undefined ? c.postContestElos[pilot] : 1200);
+
+                    history.push({
+                        contestName: c.name,
+                        date: c.date.toLocaleDateString(),
+                        raw: Math.round(pctScore * 10),
+                        percent: pctScore,
+                        eloAfter: eloAfter
+                    });
+                }
+            });
+
+            let finalEloVal = Math.round(pilotEloGlobal[pilot] || 1200);
+            let avgPercent = contestCount > 0 ? (sumPercent / contestCount) : 0;
+            let isOfficial = contestCount >= MIN_CONTESTS_REQUIRED;
+
+            if (history.length > 0) {
+                history[history.length - 1].eloAfter = finalEloVal;
+            }
+
+            currentSeasonRankings.push({
+                pilot,
+                cote: finalEloVal,
+                elo: finalEloVal,
+                sumPercent,
+                avgPercent,
+                contestCount,
+                totalRounds: history.length,
+                isOfficial
+            });
+            currentSeasonHistories[pilot] = history;
+        });
+
+        buildUI();
+    }
+
+    function buildUI() {
+        let contentsContainer = document.getElementById('tabContentsContainer');
+        contentsContainer.innerHTML = '';
+
+        menuItemsConfig = [
+            { label: 'Classement Général', targetId: 'tab-general', group: 'Navigation' },
+            { label: 'Profils & Évolution', targetId: 'tab-profiles', group: 'Navigation' },
+            { label: '🔍 Audit & Transparence (IDC & Loterie)', targetId: 'tab-audit', group: 'Transparence' },
+            { label: 'Gestion des Concours', targetId: 'tab-manage', group: 'Administration' }
+        ];
+
+        let generalDiv = document.createElement('div');
+        generalDiv.id = 'tab-general';
+        generalDiv.className = `tab-content ${activeTabId === 'tab-general' ? 'active' : ''}`;
+        contentsContainer.appendChild(generalDiv);
+        renderRankingTable();
+
+        let profilesDiv = document.createElement('div');
+        profilesDiv.id = 'tab-profiles';
+        profilesDiv.className = `tab-content ${activeTabId === 'tab-profiles' ? 'active' : ''}`;
+        
+        let profHtml = '<h2>Suivi Individuel & Évolution Chronologique</h2>';
+        profHtml += '<div class="profile-container">';
+        profHtml += '<div class="profile-sidebar"><div style="font-size:12px; font-weight:600; color:var(--text-muted); margin-bottom:8px; text-transform:uppercase;">Pilotes</div>';
+        
+        let sortedPilotsSide = [...currentSeasonRankings].sort((a,b) => b.elo - a.elo);
+        sortedPilotsSide.forEach(r => {
+            let marker = r.isOfficial ? '' : ' (NC)';
+            profHtml += `<div class="pilot-item" onclick="selectPilot('${r.pilot}')">${r.pilot}${marker}</div>`;
+        });
+        profHtml += '</div>';
+        
+        profHtml += '<div class="profile-main" id="pilotProfileMain"><p style="color:var(--text-muted); text-align:center; margin-top:50px;">Sélectionnez un pilote pour afficher l\'évolution chronologique de ses performances et de son Elo.</p></div>';
+        profHtml += '</div>';
+        profilesDiv.innerHTML = profHtml;
+        contentsContainer.appendChild(profilesDiv);
+
+        let auditDiv = document.createElement('div');
+        auditDiv.id = 'tab-audit';
+        auditDiv.className = `tab-content ${activeTabId === 'tab-audit' ? 'active' : ''}`;
+        
+        let auditHtml = `<h2>🔍 Audit & Transparence — Indice de Difficulté (IDC) & Équité Météo</h2>`;
+        auditHtml += `<p style="font-size: 13px; color: var(--text-muted);">Analyse de la force des plateaux (IDC) et du niveau d'équité aérologique / loterie météo pour chaque concours de la saison.</p>`;
+
+        activeContests.forEach(c => {
+            let q = c.quality || calculateContestQuality(c);
+            let idcLabel = c.idc >= 1.03 ? "Plateau Relevé" : (c.idc >= 0.97 ? "Plateau Standard" : "Plateau Modéré");
+
+            auditHtml += `<div class="audit-card">
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:8px;">
+                    <h3 style="margin:0; color:var(--primary);">${c.name} <span style="font-size:12px; font-weight:normal; color:var(--text-muted);">(${c.date.toLocaleDateString()})</span></h3>
+                    <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                        <span class="badge badge-idc">IDC : ${c.idc.toFixed(3)} (${idcLabel})</span>
+                        <span class="badge ${q.badgeClass}">Qualité : ${q.score}% (${q.label})</span>
+                    </div>
+                </div>
+                <p style="font-size:13.5px; margin: 4px 0;">
+                    <b>Indice IDC :</b> <span class="highlight">${c.idc.toFixed(3)}</span> &bull; 
+                    Elo moyen du plateau : <b>${Math.round(c.contestElo)} pts</b> &bull; 
+                    Manches validées : <b>${c.rounds}</b> &bull; 
+                    Participants : <b>${Object.keys(c.scores).length} pilotes</b>
+                </p>
+                <p style="font-size:13px; color:var(--text-muted); margin:4px 0 0 0;">
+                    <b>Indice d'Équité / Loterie Météo :</b> <b style="color:${q.color};">${q.score}%</b> — ${q.label}.
+                    ${q.score >= 70 ? 'Les résultats reflètent fidèlement la régularité et la performance des pilotes.' : 'Des variations météo ou thermiques marquées ont influencé les passages.'}
+                </p>
+            </div>`;
+        });
+
+        auditDiv.innerHTML = auditHtml;
+        contentsContainer.appendChild(auditDiv);
+
+        let manageDiv = document.createElement('div');
+        manageDiv.id = 'tab-manage';
+        manageDiv.className = `tab-content ${activeTabId === 'tab-manage' ? 'active' : ''}`;
+        
+        let manHtml = '<h2>Administration des Fichiers CSV</h2>';
+        manHtml += '<p style="font-size:13px; color:var(--text-muted);">Gestion des concours de la saison.</p>';
+        manHtml += `
+            <div class="upload-area" onclick="document.getElementById('csvFiles').click()">
+                <h3>📁 Cliquez ou glissez vos nouveaux fichiers CSV ici</h3>
+                <input type="file" id="csvFiles" multiple accept=".csv" onchange="handleFileSelect(event)">
+            </div>
+        `;
+        manHtml += '<table><tr><th>Concours</th><th>Date</th><th>Manches</th><th>Indice IDC</th><th>Score Qualité / Loterie</th><th>Participants</th><th>Action</th></tr>';
+        rawContestsData.forEach((c) => {
+            let realIdx = rawContestsData.indexOf(c);
+            let q = c.quality || calculateContestQuality(c);
+            manHtml += `<tr>
+                <td><b>${c.name}</b></td>
+                <td>${c.date.toLocaleDateString()}</td>
+                <td>${c.rounds}</td>
+                <td><span class="badge badge-idc">${(c.idc || 1.0).toFixed(3)}</span></td>
+                <td><span class="badge ${q.badgeClass}">${q.score}% (${q.label})</span></td>
+                <td>${Object.keys(c.scores).length} pilotes</td>
+                <td><button class="btn-danger" onclick="deleteContest(${realIdx})">Supprimer</button></td>
+            </tr>`;
+        });
+        manHtml += '</table>';
+        manageDiv.innerHTML = manHtml;
+        contentsContainer.appendChild(manageDiv);
+
+        activeContests.forEach((contest, index) => {
+            let tabId = `tab-contest-${index}`;
+            menuItemsConfig.push({ label: contest.name, targetId: tabId, group: 'Concours de la saison' });
+
+            let contestDiv = document.createElement('div');
+            contestDiv.id = tabId;
+            contestDiv.className = `tab-content ${activeTabId === tabId ? 'active' : ''}`;
+
+            let q = contest.quality || calculateContestQuality(contest);
+
+            let cHtml = `<h2>Résultats Officiels : ${contest.name}</h2>`;
+            cHtml += `<div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:15px; font-size:13px;">
+                <span>Date : <b>${contest.date.toLocaleDateString()}</b></span> &bull; 
+                <span>Manches : <b>${contest.rounds}</b></span> &bull; 
+                <span>Indice IDC : <span class="badge badge-idc">${contest.idc.toFixed(3)}</span></span> &bull; 
+                <span>Score Qualité / Loterie : <span class="badge ${q.badgeClass}">${q.score}% — ${q.label}</span></span>
+            </div>`;
+
+            cHtml += '<div class="scrollable-table"><table>';
+            cHtml += '<tr><th>Pos</th><th>Pilote</th><th>Total Points</th><th>Pourcentage</th><th>Cote Elo (après)</th></tr>';
+            
+            contest.details.sort((a, b) => parseInt(a[0]) - parseInt(b[0]));
+            contest.details.forEach(row => {
+                let pos = row[0];
+                let name = row[contest.headers.indexOf("Pilot_Name")] || "";
+                let points = row[contest.headers.indexOf("Total Points")] || "";
+                let percent = row[contest.headers.indexOf("Percent")] || "";
+                
+                let upperName = name.toUpperCase();
+                let eloAfter = contest.postContestElos && contest.postContestElos[upperName] !== undefined 
+                    ? Math.round(contest.postContestElos[upperName]) 
+                    : '-';
+
+                cHtml += `<tr>
+                    <td>${pos}</td>
+                    <td><span class="pilot-link" onclick="openPilotProfile('${upperName}')">${name}</span></td>
+                    <td>${points}</td>
+                    <td class="highlight">${percent}%</td>
+                    <td><b>${eloAfter} pts</b></td>
+                </tr>`;
+            });
+            cHtml += '</table></div>';
+            contestDiv.innerHTML = cHtml;
+            contentsContainer.appendChild(contestDiv);
+        });
+
+        buildDropdownMenu();
+    }
+
+    function renderRankingTable() {
+        let generalDiv = document.getElementById('tab-general');
+        if (!generalDiv) return;
+
+        let yearVal = document.getElementById('yearSelect') ? document.getElementById('yearSelect').value : '';
+        let isElo = (currentRankingMode === 'elo');
+
+        let titleText = isElo 
+            ? `Classement Général Elo Global — Saison ${yearVal}`
+            : `Classement Général FFAM / FAI (Cumul des Pourcentages) — Saison ${yearVal}`;
+
+        let subtitleText = isElo
+            ? `Évalue la force pure et la régularité par duels croisés (indépendant du volume de courses) &bull; Minimum ${MIN_CONTESTS_REQUIRED} concours.`
+            : `Cumul officiel des pourcentages obtenus sur la saison (Règlement FFAM/FAI) &bull; Minimum ${MIN_CONTESTS_REQUIRED} concours.`;
+
+        let sortedRankings = [...currentSeasonRankings];
+        sortedRankings.sort((a, b) => {
+            if (a.isOfficial && !b.isOfficial) return -1;
+            if (!a.isOfficial && b.isOfficial) return 1;
+            if (isElo) {
+                return b.elo - a.elo;
+            } else {
+                return b.sumPercent - a.sumPercent;
+            }
+        });
+
+        let genHtml = `<h2>${titleText}</h2>`;
+        genHtml += `<p style="font-size: 13px; color: var(--text-muted);">${subtitleText}</p>`;
+        
+        if (isElo) {
+            genHtml += '<table><tr><th>Rang</th><th>Pilote</th><th>Cote Elo</th><th>Cumul FFAM (%)</th><th>Concours Disputés</th><th>Statut</th></tr>';
+        } else {
+            genHtml += '<table><tr><th>Rang</th><th>Pilote</th><th>Cumul Pourcentage (FFAM)</th><th>Moyenne % / Course</th><th>Cote Elo</th><th>Concours Disputés</th><th>Statut</th></tr>';
+        }
+
+        let officialRank = 1;
+        sortedRankings.forEach((r) => {
+            let rankDisplay = r.isOfficial ? officialRank++ : '-';
+            let statusBadge = r.isOfficial 
+                ? '<span style="color:#107c41; font-weight:500;">Officiel</span>' 
+                : '<span style="color:#d97706;">Non classé (< 3)</span>';
+            let rowClass = r.isOfficial ? '' : 'nc-row';
+
+            if (isElo) {
+                genHtml += `<tr class="${rowClass}">
+                    <td><b>${rankDisplay}</b></td>
+                    <td><span class="pilot-link" onclick="openPilotProfile('${r.pilot}')">${r.pilot}</span></td>
+                    <td class="highlight"><b>${r.elo} pts</b></td>
+                    <td>${r.sumPercent.toFixed(2)} %</td>
+                    <td>${r.contestCount}</td>
+                    <td>${statusBadge}</td>
+                </tr>`;
+            } else {
+                genHtml += `<tr class="${rowClass}">
+                    <td><b>${rankDisplay}</b></td>
+                    <td><span class="pilot-link" onclick="openPilotProfile('${r.pilot}')">${r.pilot}</span></td>
+                    <td class="highlight"><b>${r.sumPercent.toFixed(2)} %</b></td>
+                    <td>${r.avgPercent.toFixed(2)} %</td>
+                    <td><b>${r.elo} pts</b></td>
+                    <td>${r.contestCount}</td>
+                    <td>${statusBadge}</td>
+                </tr>`;
+            }
+        });
+        genHtml += '</table>';
+        generalDiv.innerHTML = genHtml;
+    }
+
+    function buildDropdownMenu() {
+        let menuEl = document.getElementById('dropdownMenu');
+        menuEl.innerHTML = '';
+
+        let groups = {};
+        menuItemsConfig.forEach(item => {
+            if (!groups[item.group]) groups[item.group] = [];
+            groups[item.group].push(item);
+        });
+
+        for (let groupName in groups) {
+            let sectionTitle = document.createElement('div');
+            sectionTitle.className = 'dropdown-section-title';
+            sectionTitle.innerText = groupName;
+            menuEl.appendChild(sectionTitle);
+
+            groups[groupName].forEach(item => {
+                let btn = document.createElement('button');
+                btn.className = `menu-item ${activeTabId === item.targetId ? 'active' : ''}`;
+                btn.innerText = item.label;
+                btn.onclick = function() {
+                    switchTab(item.targetId);
+                };
+                menuEl.appendChild(btn);
+            });
+        }
+    }
+
+    function switchTab(targetId) {
+        activeTabId = targetId;
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        let targetDiv = document.getElementById(targetId);
+        if (targetDiv) targetDiv.classList.add('active');
+        
+        document.getElementById('dropdownMenu').classList.remove('show');
+        buildDropdownMenu();
+    }
+
+    function openPilotProfile(pilotName) {
+        switchTab('tab-profiles');
+        selectPilot(pilotName);
+    }
+
+    function selectPilot(pilotName) {
+        document.querySelectorAll('.pilot-item').forEach(item => {
+            if (item.innerText.includes(pilotName)) item.classList.add('active');
+            else item.classList.remove('active');
+        });
+
+        let history = currentSeasonHistories[pilotName] || [];
+        let rankObj = currentSeasonRankings.find(r => r.pilot === pilotName);
+
+        let mainDiv = document.getElementById('pilotProfileMain');
+        let html = `<h3>${pilotName}</h3>`;
+        if (rankObj) {
+            let statusText = rankObj.isOfficial ? '<span style="color:#107c41; font-weight:500;">Officiel</span>' : '<span style="color:#d97706;">Non classé (< 3 concours)</span>';
+            html += `<p style="font-size:13px; color:var(--text-muted);">
+                Cote Elo : <b class="highlight">${rankObj.elo} pts</b> &bull; 
+                Cumul FFAM : <b>${rankObj.sumPercent.toFixed(2)} %</b> &bull; 
+                Concours : ${rankObj.contestCount} &bull; Statut : ${statusText}
+            </p>`;
+        }
+
+        if (history.length === 0) {
+            html += `<p style="color:var(--text-muted);">Aucun concours enregistré pour ce pilote.</p>`;
+        } else {
+            html += generateSVGScoreChart(history);
+        }
+
+        mainDiv.innerHTML = html;
+    }
+
+    function generateSVGScoreChart(history) {
+        let width = 680;
+        let height = 320;
+        let padding = 45;
+
+        let rawScores = history.map(h => h.raw);
+        let eloScores = history.map(h => h.eloAfter);
+        
+        let minRaw = Math.floor((Math.min(...rawScores, 850) - 10) / 50) * 50;
+        let maxRaw = Math.ceil((Math.max(...rawScores, 1020) + 10) / 50) * 50;
+
+        let minElo = Math.floor((Math.min(...eloScores, 1150) - 50) / 100) * 100;
+        let maxElo = Math.ceil((Math.max(...eloScores, 1250) + 50) / 100) * 100;
+        if (minElo === maxElo) { maxElo += 100; minElo -= 100; }
+
+        let dx = (width - padding * 2) / Math.max(history.length - 1, 1);
+        let dyRaw = (height - padding * 2) / (maxRaw - minRaw || 1);
+        let dyElo = (height - padding * 2) / (maxElo - minElo || 1);
+
+        let rawPoints = history.map((h, i) => ({
+            x: padding + i * dx,
+            y: height - padding - (h.raw - minRaw) * dyRaw,
+            val: h.raw,
+            name: h.contestName
+        }));
+
+        let eloPoints = history.map((h, i) => ({
+            x: padding + i * dx,
+            y: height - padding - (h.eloAfter - minElo) * dyElo,
+            val: h.eloAfter,
+            name: h.contestName
+        }));
+
+        let rawLine = rawPoints.map(p => `${p.x},${p.y}`).join(' ');
+        let eloLine = eloPoints.map(p => `${p.x},${p.y}`).join(' ');
+
+        let svg = `<svg class="svg-chart" viewBox="0 0 ${width} ${height}">`;
+        
+        for (let s = minRaw; s <= maxRaw; s += 50) {
+            let y = height - padding - (s - minRaw) * dyRaw;
+            svg += `<line x1="${padding}" y1="${y}" x2="${width - padding}" y2="${y}" stroke="#edf2f7" stroke-dasharray="3" />`;
+            if (s % 100 === 0) {
+                svg += `<text x="${padding - 8}" y="${y + 4}" font-size="9" fill="#e53e3e" text-anchor="end">${s}</text>`;
+            }
+        }
+
+        for (let e = minElo; e <= maxElo; e += 100) {
+            let y = height - padding - (e - minElo) * dyElo;
+            svg += `<text x="${width - padding + 8}" y="${y + 4}" font-size="9" fill="#1b365d" text-anchor="start">${e}</text>`;
+        }
+
+        if (history.length > 1) {
+            svg += `<polyline fill="none" stroke="#e53e3e" stroke-width="1.5" stroke-dasharray="3" points="${rawLine}" />`;
+            svg += `<polyline fill="none" stroke="#1b365d" stroke-width="2.5" points="${eloLine}" />`;
+        }
+
+        rawPoints.forEach((p, i) => {
+            svg += `<circle cx="${p.x}" cy="${p.y}" r="4" fill="#e53e3e" stroke="#fff" stroke-width="1.5"/>`;
+            let ep = eloPoints[i];
+            svg += `<circle cx="${ep.x}" cy="${ep.y}" r="5" fill="#1b365d" stroke="#fff" stroke-width="1.5"/>`;
+            svg += `<text x="${ep.x}" y="${ep.y - 10}" font-size="10" fill="#1b365d" font-weight="700" text-anchor="middle">${ep.val} pts</text>`;
+            svg += `<text x="${p.x}" y="${height - padding + 18}" font-size="10" fill="#4a5568" text-anchor="middle" transform="rotate(-10 ${p.x} ${height - padding + 18})">${p.name}</text>`;
+        });
+
+        svg += `</svg>`;
+
+        svg += `<div class="legend">
+            <div class="legend-item"><span class="legend-color" style="background: #1b365d;"></span> <b>Évolution Elo (Axe droit)</b></div>
+            <div class="legend-item"><span class="legend-color" style="background: #e53e3e; border-top: 2px dashed #e53e3e; height:0;"></span> <b>Score Brut F3X Vault (Axe gauche)</b></div>
+        </div>`;
+
+        return svg;
+    }
+
+    function exportToExcelMultiSheet() {
+        let selectedYear = document.getElementById('yearSelect').value;
+        let xml = `<?xml version="1.0" encoding="utf-8"?>
+        <?mso-application progid="Excel.Sheet"?>
+        <Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+         xmlns:o="urn:schemas-microsoft-com:office:office"
+         xmlns:x="urn:schemas-microsoft-com:office:excel"
+         xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"
+         xmlns:html="http://www.w3.org/TR/REC-html40">`;
+
+        xml += `<Worksheet ss:Name="Classements Généraux"><Table>`;
+        xml += `<Row><Cell><Data ss:Type="String">Pilote</Data></Cell><Cell><Data ss:Type="String">Cote Elo</Data></Cell><Cell><Data ss:Type="String">Cumul FFAM (%)</Data></Cell><Cell><Data ss:Type="String">Moyenne % / Course</Data></Cell><Cell><Data ss:Type="String">Concours Disputes</Data></Cell><Cell><Data ss:Type="String">Statut</Data></Cell></Row>`;
+        
+        let sortedExport = [...currentSeasonRankings].sort((a,b) => b.elo - a.elo);
+        sortedExport.forEach(r => {
+            let status = r.isOfficial ? 'Officiel' : 'Non classe';
+            xml += `<Row><Cell><Data ss:Type="String">${r.pilot}</Data></Cell><Cell><Data ss:Type="Number">${r.elo}</Data></Cell><Cell><Data ss:Type="Number">${r.sumPercent.toFixed(2)}</Data></Cell><Cell><Data ss:Type="Number">${r.avgPercent.toFixed(2)}</Data></Cell><Cell><Data ss:Type="Number">${r.contestCount}</Data></Cell><Cell><Data ss:Type="String">${status}</Data></Cell></Row>`;
+        });
+        xml += `</Table></Worksheet>`;
+
+        activeContests.forEach(contest => {
+            let q = contest.quality || calculateContestQuality(contest);
+            let sheetName = contest.name.replace(/[\/\\\?\*\[\]:]/g, "").substring(0, 31);
+            xml += `<Worksheet ss:Name="${sheetName}"><Table>`;
+            xml += `<Row><Cell><Data ss:Type="String">Position</Data></Cell><Cell><Data ss:Type="String">Pilote</Data></Cell><Cell><Data ss:Type="String">Total Points</Data></Cell><Cell><Data ss:Type="String">Pourcentage</Data></Cell><Cell><Data ss:Type="String">IDC Concours</Data></Cell><Cell><Data ss:Type="String">Qualite Loterie</Data></Cell><Cell><Data ss:Type="String">Cote Elo (apres)</Data></Cell></Row>`;
+            
+            contest.details.forEach(row => {
+                let pos = row[0];
+                let name = row[contest.headers.indexOf("Pilot_Name")] || "";
+                let points = row[contest.headers.indexOf("Total Points")] || "";
+                let percent = row[contest.headers.indexOf("Percent")] || "";
+                let upperName = name.toUpperCase();
+                let eloAfter = contest.postContestElos && contest.postContestElos[upperName] !== undefined 
+                    ? Math.round(contest.postContestElos[upperName]) 
+                    : '-';
+
+                xml += `<Row><Cell><Data ss:Type="String">${pos}</Data></Cell><Cell><Data ss:Type="String">${name}</Data></Cell><Cell><Data ss:Type="String">${points}</Data></Cell><Cell><Data ss:Type="String">${percent}%</Data></Cell><Cell><Data ss:Type="String">${contest.idc.toFixed(3)}</Data></Cell><Cell><Data ss:Type="String">${q.score}% (${q.label})</Data></Cell><Cell><Data ss:Type="String">${eloAfter}</Data></Cell></Row>`;
+            });
+            xml += `</Table></Worksheet>`;
+        });
+
+        xml += `</Workbook>`;
+
+        let blob = new Blob([xml], { type: 'application/vnd.ms-excel' });
+        let url = URL.createObjectURL(blob);
+        let a = document.createElement('a');
+        a.href = url;
+        a.download = `Be_F3F_Saison_${selectedYear}_Global.xls`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }
+</script>
+
+</body>
+</html>
