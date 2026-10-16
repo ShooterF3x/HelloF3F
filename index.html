@@ -407,6 +407,7 @@
         document.getElementById('btnSwitchElo').classList.toggle('active', mode === 'elo');
         document.getElementById('btnSwitchFFAM').classList.toggle('active', mode === 'ffam');
         renderRankingTable();
+        renderContestTables();
     }
 
     async function loadContestsFromGitHub() {
@@ -1080,10 +1081,23 @@
             let contestDiv = document.createElement('div');
             contestDiv.id = tabId;
             contestDiv.className = `tab-content ${activeTabId === tabId ? 'active' : ''}`;
+            contentsContainer.appendChild(contestDiv);
+        });
+
+        renderContestTables();
+        buildDropdownMenu();
+    }
+
+    function renderContestTables() {
+        let isElo = (currentRankingMode === 'elo');
+
+        activeContests.forEach((contest, index) => {
+            let contestDiv = document.getElementById(`tab-contest-${index}`);
+            if (!contestDiv) return;
 
             let q = contest.quality || calculateContestQuality(contest);
 
-            let cHtml = `<h2>Résultats Officiels : ${contest.name}</h2>`;
+            let cHtml = `<h2>Résultats Officiels : ${contest.name} ${isElo ? '(Classement Elo)' : '(Classement FAI / FFAM)'}</h2>`;
             cHtml += `<div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:15px; font-size:13px;">
                 <span>Date : <b>${contest.date.toLocaleDateString()}</b></span> &bull; 
                 <span>Manches : <b>${contest.rounds}</b></span> &bull; 
@@ -1091,35 +1105,56 @@
                 <span>Score Qualité / Loterie : <span class="badge ${q.badgeClass}">${q.score}% — ${q.label}</span></span>
             </div>`;
 
-            cHtml += '<div class="scrollable-table"><table>';
-            cHtml += '<tr><th>Pos</th><th>Pilote</th><th>Total Points</th><th>Pourcentage</th><th>Cote Elo (après)</th></tr>';
-            
-            contest.details.sort((a, b) => parseInt(a[0]) - parseInt(b[0]));
-            contest.details.forEach(row => {
-                let pos = row[0];
+            let rows = contest.details.map(row => {
+                let posFai = parseInt(row[0]);
                 let name = row[contest.headers.indexOf("Pilot_Name")] || "";
                 let points = row[contest.headers.indexOf("Total Points")] || "";
                 let percent = row[contest.headers.indexOf("Percent")] || "";
-                
                 let upperName = name.toUpperCase();
                 let eloAfter = contest.postContestElos && contest.postContestElos[upperName] !== undefined 
                     ? Math.round(contest.postContestElos[upperName]) 
-                    : '-';
-
-                cHtml += `<tr>
-                    <td>${pos}</td>
-                    <td><span class="pilot-link" onclick="openPilotProfile('${upperName}')">${name}</span></td>
-                    <td>${points}</td>
-                    <td class="highlight">${percent}%</td>
-                    <td><b>${eloAfter} pts</b></td>
-                </tr>`;
+                    : 0;
+                return { posFai, name, upperName, points, percent, eloAfter };
             });
+
+            if (isElo) {
+                rows.sort((a, b) => b.eloAfter - a.eloAfter || a.posFai - b.posFai);
+            } else {
+                rows.sort((a, b) => a.posFai - b.posFai);
+            }
+
+            cHtml += '<div class="scrollable-table"><table>';
+            if (isElo) {
+                cHtml += '<tr><th>Rang Elo</th><th>Pilote</th><th>Cote Elo (après)</th><th>Pourcentage FAI</th><th>Total Points</th><th>Rang FAI</th></tr>';
+            } else {
+                cHtml += '<tr><th>Rang FAI</th><th>Pilote</th><th>Pourcentage</th><th>Total Points</th><th>Cote Elo (après)</th></tr>';
+            }
+
+            rows.forEach((r, idx) => {
+                let eloDisplay = r.eloAfter > 0 ? `${r.eloAfter} pts` : '-';
+                if (isElo) {
+                    cHtml += `<tr>
+                        <td><b>${idx + 1}</b></td>
+                        <td><span class="pilot-link" onclick="openPilotProfile('${r.upperName}')">${r.name}</span></td>
+                        <td class="highlight"><b>${eloDisplay}</b></td>
+                        <td>${r.percent}%</td>
+                        <td>${r.points}</td>
+                        <td>${r.posFai}</td>
+                    </tr>`;
+                } else {
+                    cHtml += `<tr>
+                        <td><b>${r.posFai}</b></td>
+                        <td><span class="pilot-link" onclick="openPilotProfile('${r.upperName}')">${r.name}</span></td>
+                        <td class="highlight">${r.percent}%</td>
+                        <td>${r.points}</td>
+                        <td><b>${eloDisplay}</b></td>
+                    </tr>`;
+                }
+            });
+
             cHtml += '</table></div>';
             contestDiv.innerHTML = cHtml;
-            contentsContainer.appendChild(contestDiv);
         });
-
-        buildDropdownMenu();
     }
 
     function renderRankingTable() {
