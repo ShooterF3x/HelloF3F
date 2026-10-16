@@ -882,12 +882,14 @@
             let contestCount = 0;
             let sumPercent = 0;
             let history = [];
+            let allScores = [];
 
             activeContests.forEach(c => {
                 if (c.scores[pilot] !== undefined) {
                     contestCount++;
                     let pctScore = c.scores[pilot];
                     sumPercent += pctScore;
+                    allScores.push(pctScore);
                     let eloAfter = Math.round(c.postContestElos && c.postContestElos[pilot] !== undefined ? c.postContestElos[pilot] : 1200);
 
                     history.push({
@@ -899,6 +901,11 @@
                     });
                 }
             });
+
+            // Règlement FFAM / FAI : conservation des 4 meilleurs résultats (pourcentages)
+            let best4Scores = [...allScores].sort((a, b) => b - a).slice(0, 4);
+            let sumBest4Percent = best4Scores.reduce((a, b) => a + b, 0);
+            let avgBest4Percent = best4Scores.length > 0 ? (sumBest4Percent / best4Scores.length) : 0;
 
             let finalEloVal = Math.round(pilotEloGlobal[pilot] || 1200);
             let avgPercent = contestCount > 0 ? (sumPercent / contestCount) : 0;
@@ -912,8 +919,10 @@
                 pilot,
                 cote: finalEloVal,
                 elo: finalEloVal,
-                sumPercent,
-                avgPercent,
+                sumPercent: sumBest4Percent,
+                sumTotalPercent: sumPercent,
+                avgPercent: avgBest4Percent,
+                avgTotalPercent: avgPercent,
                 contestCount,
                 totalRounds: history.length,
                 isOfficial
@@ -1088,7 +1097,7 @@
 
         let subtitleText = isElo
             ? `Évalue la force pure et la régularité par duels croisés (indépendant du volume de courses) &bull; Minimum ${MIN_CONTESTS_REQUIRED} concours.`
-            : `Cumul officiel des pourcentages obtenus sur la saison (Règlement FFAM/FAI) &bull; Minimum ${MIN_CONTESTS_REQUIRED} concours.`;
+            : `Cumul officiel des 4 meilleurs pourcentages obtenus sur la saison (Règlement FFAM/FAI) &bull; Minimum ${MIN_CONTESTS_REQUIRED} concours.`;
 
         let sortedRankings = [...currentSeasonRankings];
         sortedRankings.sort((a, b) => {
@@ -1105,9 +1114,9 @@
         genHtml += `<p style="font-size: 13px; color: var(--text-muted);">${subtitleText}</p>`;
         
         if (isElo) {
-            genHtml += '<table><tr><th>Rang</th><th>Pilote</th><th>Cote Elo</th><th>Cumul FFAM (%)</th><th>Concours Disputés</th><th>Statut</th></tr>';
+            genHtml += '<table><tr><th>Rang</th><th>Pilote</th><th>Cote Elo</th><th>Cumul FFAM (4 meilleurs %)</th><th>Concours Disputés</th><th>Statut</th></tr>';
         } else {
-            genHtml += '<table><tr><th>Rang</th><th>Pilote</th><th>Cumul Pourcentage (FFAM)</th><th>Moyenne % / Course</th><th>Cote Elo</th><th>Concours Disputés</th><th>Statut</th></tr>';
+            genHtml += '<table><tr><th>Rang</th><th>Pilote</th><th>Cumul FFAM (4 meilleurs %)</th><th>Moyenne (4 meilleurs)</th><th>Cote Elo</th><th>Concours Disputés</th><th>Statut</th></tr>';
         }
 
         let officialRank = 1;
@@ -1201,7 +1210,7 @@
             let statusText = rankObj.isOfficial ? '<span style="color:#107c41; font-weight:500;">Officiel</span>' : '<span style="color:#d97706;">Non classé (< 3 concours)</span>';
             html += `<p style="font-size:13px; color:var(--text-muted);">
                 Cote Elo : <b class="highlight">${rankObj.elo} pts</b> &bull; 
-                Cumul FFAM : <b>${rankObj.sumPercent.toFixed(2)} %</b> &bull; 
+                Cumul FFAM (4 meilleurs) : <b>${rankObj.sumPercent.toFixed(2)} %</b> &bull; 
                 Concours : ${rankObj.contestCount} &bull; Statut : ${statusText}
             </p>`;
         }
@@ -1300,7 +1309,7 @@
          xmlns:html="http://www.w3.org/TR/REC-html40">`;
 
         xml += `<Worksheet ss:Name="Classements Généraux"><Table>`;
-        xml += `<Row><Cell><Data ss:Type="String">Pilote</Data></Cell><Cell><Data ss:Type="String">Cote Elo</Data></Cell><Cell><Data ss:Type="String">Cumul FFAM (%)</Data></Cell><Cell><Data ss:Type="String">Moyenne % / Course</Data></Cell><Cell><Data ss:Type="String">Concours Disputes</Data></Cell><Cell><Data ss:Type="String">Statut</Data></Cell></Row>`;
+        xml += `<Row><Cell><Data ss:Type="String">Pilote</Data></Cell><Cell><Data ss:Type="String">Cote Elo</Data></Cell><Cell><Data ss:Type="String">Cumul FFAM (4 meilleurs %)</Data></Cell><Cell><Data ss:Type="String">Moyenne (4 meilleurs)</Data></Cell><Cell><Data ss:Type="String">Concours Disputes</Data></Cell><Cell><Data ss:Type="String">Statut</Data></Cell></Row>`;
         
         let sortedExport = [...currentSeasonRankings].sort((a,b) => b.elo - a.elo);
         sortedExport.forEach(r => {
@@ -1311,7 +1320,7 @@
 
         activeContests.forEach(contest => {
             let q = contest.quality || calculateContestQuality(contest);
-            let sheetName = contest.name.replace(/[\/\\\?\*\[\]:]/g, "").substring(0, 31);
+            let sheetName = contest.name.replace(/[\/\\?\*\[\]:]/g, "").substring(0, 31);
             xml += `<Worksheet ss:Name="${sheetName}"><Table>`;
             xml += `<Row><Cell><Data ss:Type="String">Position</Data></Cell><Cell><Data ss:Type="String">Pilote</Data></Cell><Cell><Data ss:Type="String">Total Points</Data></Cell><Cell><Data ss:Type="String">Pourcentage</Data></Cell><Cell><Data ss:Type="String">IDC Concours</Data></Cell><Cell><Data ss:Type="String">Qualite Loterie</Data></Cell><Cell><Data ss:Type="String">Cote Elo (apres)</Data></Cell></Row>`;
             
