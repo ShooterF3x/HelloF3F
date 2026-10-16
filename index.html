@@ -362,7 +362,7 @@
 
             <div class="ranking-mode-toggle" title="Basculer entre le classement Elo et le classement FFAM">
                 <button id="btnSwitchElo" class="switch-btn active" onclick="setRankingMode('elo')">🏆 Cote Elo</button>
-                <button id="btnSwitchFFAM" class="switch-btn" onclick="setRankingMode('ffam')">🇫🇷 FFAM / CdF (/1000)</button>
+                <button id="btnSwitchFFAM" class="switch-btn" onclick="setRankingMode('ffam')">🇫🇷 FFAM / FAI (%)</button>
             </div>
         </div>
         <div class="controls-right">
@@ -407,6 +407,7 @@
         document.getElementById('btnSwitchElo').classList.toggle('active', mode === 'elo');
         document.getElementById('btnSwitchFFAM').classList.toggle('active', mode === 'ffam');
         renderRankingTable();
+        renderAllContestTables();
     }
 
     async function loadContestsFromGitHub() {
@@ -664,7 +665,6 @@
         tempRows.forEach(item => {
             let pctScore = 0;
             if (winnerPoints > 0 && item.pts > 0) {
-                // Score exact en % (ex: 93.180555%)
                 pctScore = (item.pts / winnerPoints) * 100;
             } else if (item.pct > 0) {
                 pctScore = item.pct;
@@ -825,6 +825,15 @@
             });
         }
 
+        activeContests.forEach(c => {
+            let rawObj = rawContestsData.find(r => r.name === c.name && r.date.getTime() === c.date.getTime());
+            if (rawObj) {
+                rawObj.idc = c.idc;
+                rawObj.contestElo = c.contestElo;
+                rawObj.quality = c.quality;
+            }
+        });
+
         let trackingElo = {};
         seasonPilots.forEach(p => trackingElo[p] = 1200);
         currentSeasonHistories = {};
@@ -914,7 +923,7 @@
                 }
             });
 
-            // Règlement FFAM / CdF : conservation des min(N, 4) meilleurs résultats
+            // Règlement FFAM / FAI : conservation des 4 meilleurs résultats (4/10)
             let best4Scores = [...allScores].sort((a, b) => b - a).slice(0, 4);
             let sumBest4Percent = best4Scores.reduce((a, b) => a + b, 0);
             let avgBest4Percent = best4Scores.length > 0 ? (sumBest4Percent / best4Scores.length) : 0;
@@ -932,8 +941,6 @@
                 cote: finalEloVal,
                 elo: finalEloVal,
                 sumPercent: sumBest4Percent, // Cumul % des 4 meilleurs
-                sumPoints1000: sumBest4Percent * 10, // Cumul en points sur base 4000
-                score1000: 0, // Calculé ci-dessous
                 sumTotalPercent: sumPercent,
                 avgPercent: avgBest4Percent,
                 avgTotalPercent: avgPercent,
@@ -942,21 +949,6 @@
                 isOfficial
             });
             currentSeasonHistories[pilot] = history;
-        });
-
-        // Normalisation officielle sur 1000 par rapport au 1er pilote
-        let leaderObj = [...currentSeasonRankings]
-            .filter(r => r.isOfficial)
-            .sort((a, b) => b.sumPercent - a.sumPercent)[0];
-
-        if (!leaderObj) {
-            leaderObj = [...currentSeasonRankings].sort((a, b) => b.sumPercent - a.sumPercent)[0];
-        }
-
-        let leaderScore = leaderObj ? leaderObj.sumPercent : 1;
-
-        currentSeasonRankings.forEach(r => {
-            r.score1000 = leaderScore > 0 ? (r.sumPercent / leaderScore) * 1000 : 0;
         });
 
         buildUI();
@@ -1071,46 +1063,85 @@
             let contestDiv = document.createElement('div');
             contestDiv.id = tabId;
             contestDiv.className = `tab-content ${activeTabId === tabId ? 'active' : ''}`;
-
-            let q = contest.quality || calculateContestQuality(contest);
-
-            let cHtml = `<h2>Résultats Officiels : ${contest.name}</h2>`;
-            cHtml += `<div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:15px; font-size:13px;">
-                <span>Date : <b>${contest.date.toLocaleDateString()}</b></span> &bull; 
-                <span>Manches : <b>${contest.rounds}</b></span> &bull; 
-                <span>Indice IDC : <span class="badge badge-idc">${contest.idc.toFixed(3)}</span></span> &bull; 
-                <span>Score Qualité / Loterie : <span class="badge ${q.badgeClass}">${q.score}% — ${q.label}</span></span>
-            </div>`;
-
-            cHtml += '<div class="scrollable-table"><table>';
-            cHtml += '<tr><th>Pos</th><th>Pilote</th><th>Total Points</th><th>Pourcentage</th><th>Cote Elo (après)</th></tr>';
-            
-            contest.details.sort((a, b) => parseInt(a[0]) - parseInt(b[0]));
-            contest.details.forEach(row => {
-                let pos = row[0];
-                let name = row[contest.headers.indexOf("Pilot_Name")] || "";
-                let points = row[contest.headers.indexOf("Total Points")] || "";
-                let percent = row[contest.headers.indexOf("Percent")] || "";
-                
-                let upperName = name.toUpperCase();
-                let eloAfter = contest.postContestElos && contest.postContestElos[upperName] !== undefined 
-                    ? Math.round(contest.postContestElos[upperName]) 
-                    : '-';
-
-                cHtml += `<tr>
-                    <td>${pos}</td>
-                    <td><span class="pilot-link" onclick="openPilotProfile('${upperName}')">${name}</span></td>
-                    <td>${points}</td>
-                    <td class="highlight">${percent}%</td>
-                    <td><b>${eloAfter} pts</b></td>
-                </tr>`;
-            });
-            cHtml += '</table></div>';
-            contestDiv.innerHTML = cHtml;
             contentsContainer.appendChild(contestDiv);
+
+            renderContestTable(contest, index, contestDiv);
         });
 
         buildDropdownMenu();
+    }
+
+    function renderAllContestTables() {
+        activeContests.forEach((contest, index) => {
+            let contestDiv = document.getElementById(`tab-contest-${index}`);
+            if (contestDiv) {
+                renderContestTable(contest, index, contestDiv);
+            }
+        });
+    }
+
+    function renderContestTable(contest, index, contestDiv) {
+        let q = contest.quality || calculateContestQuality(contest);
+        let isElo = (currentRankingMode === 'elo');
+
+        let modeTitle = isElo ? "Classement Elo" : "Résultats Officiels FAI / FFAM";
+
+        let cHtml = `<h2>${contest.name} — ${modeTitle}</h2>`;
+        cHtml += `<div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:15px; font-size:13px;">
+            <span>Date : <b>${contest.date.toLocaleDateString()}</b></span> &bull; 
+            <span>Manches : <b>${contest.rounds}</b></span> &bull; 
+            <span>Indice IDC : <span class="badge badge-idc">${contest.idc.toFixed(3)}</span></span> &bull; 
+            <span>Score Qualité / Loterie : <span class="badge ${q.badgeClass}">${q.score}% — ${q.label}</span></span>
+        </div>`;
+
+        let rowData = contest.details.map(row => {
+            let pos = row[0];
+            let name = row[contest.headers.indexOf("Pilot_Name")] || "";
+            let points = row[contest.headers.indexOf("Total Points")] || "";
+            let percent = row[contest.headers.indexOf("Percent")] || "";
+            let upperName = name.toUpperCase();
+            let eloVal = contest.postContestElos && contest.postContestElos[upperName] !== undefined 
+                ? Math.round(contest.postContestElos[upperName]) 
+                : 1200;
+            let faiPos = parseInt(pos) || 999;
+            let pctVal = parseFloat(percent) || 0.0;
+
+            return { pos, name, upperName, points, percent, eloVal, faiPos, pctVal };
+        });
+
+        if (isElo) {
+            rowData.sort((a, b) => b.eloVal !== a.eloVal ? b.eloVal - a.eloVal : b.pctVal - a.pctVal);
+        } else {
+            rowData.sort((a, b) => a.faiPos - b.faiPos);
+        }
+
+        cHtml += '<div class="scrollable-table"><table>';
+        if (isElo) {
+            cHtml += '<tr><th>Rang Elo</th><th>Pilote</th><th>Cote Elo (après)</th><th>Pourcentage</th><th>Total Points</th><th>Pos FAI</th></tr>';
+            rowData.forEach((item, rIdx) => {
+                cHtml += `<tr>
+                    <td><b>${rIdx + 1}</b></td>
+                    <td><span class="pilot-link" onclick="openPilotProfile('${item.upperName}')">${item.name}</span></td>
+                    <td class="highlight"><b>${item.eloVal} pts</b></td>
+                    <td>${item.percent}%</td>
+                    <td>${item.points}</td>
+                    <td>${item.pos}</td>
+                </tr>`;
+            });
+        } else {
+            cHtml += '<tr><th>Pos FAI</th><th>Pilote</th><th>Total Points</th><th>Pourcentage</th><th>Cote Elo (après)</th></tr>';
+            rowData.forEach(item => {
+                cHtml += `<tr>
+                    <td><b>${item.pos}</b></td>
+                    <td><span class="pilot-link" onclick="openPilotProfile('${item.upperName}')">${item.name}</span></td>
+                    <td>${item.points}</td>
+                    <td class="highlight">${item.percent}%</td>
+                    <td><b>${item.eloVal} pts</b></td>
+                </tr>`;
+            });
+        }
+        cHtml += '</table></div>';
+        contestDiv.innerHTML = cHtml;
     }
 
     function renderRankingTable() {
@@ -1122,11 +1153,11 @@
 
         let titleText = isElo 
             ? `Classement Général Elo Global — Saison ${yearVal}`
-            : `Classement Général Officiel FFAM / CdF — Saison ${yearVal}`;
+            : `Classement Général Officiel FFAM / FAI — Saison ${yearVal}`;
 
         let subtitleText = isElo
             ? `Évalue la force pure et la régularité par duels croisés &bull; Minimum ${MIN_CONTESTS_REQUIRED} concours.`
-            : `Note officiellement ramenée sur 1000 pts (Leader = 1000 pts) &bull; Règle des 4 meilleurs concours (4/10) &bull; Minimum ${MIN_CONTESTS_REQUIRED} concours.`;
+            : `Cumul des 4 meilleurs résultats (%) &bull; Règle des 4 meilleurs concours (4/10) &bull; Minimum ${MIN_CONTESTS_REQUIRED} concours.`;
 
         let sortedRankings = [...currentSeasonRankings];
         sortedRankings.sort((a, b) => {
@@ -1143,9 +1174,9 @@
         genHtml += `<p style="font-size: 13px; color: var(--text-muted);">${subtitleText}</p>`;
         
         if (isElo) {
-            genHtml += '<table><tr><th>Rang</th><th>Pilote</th><th>Cote Elo</th><th>Note CdF (/1000)</th><th>Cumul 4/10 (Pts)</th><th>Concours</th><th>Statut</th></tr>';
+            genHtml += '<table><tr><th>Rang</th><th>Pilote</th><th>Cote Elo</th><th>Cumul 4/10 (%)</th><th>Moyenne %</th><th>Concours</th><th>Statut</th></tr>';
         } else {
-            genHtml += '<table><tr><th>Rang</th><th>Pilote</th><th>Note CdF (/1000)</th><th>Cumul 4/10 (Pts)</th><th>Moyenne %</th><th>Cote Elo</th><th>Concours</th><th>Statut</th></tr>';
+            genHtml += '<table><tr><th>Rang</th><th>Pilote</th><th>Cumul 4/10 (%)</th><th>Moyenne %</th><th>Cote Elo</th><th>Concours</th><th>Statut</th></tr>';
         }
 
         let officialRank = 1;
@@ -1161,8 +1192,8 @@
                     <td><b>${rankDisplay}</b></td>
                     <td><span class="pilot-link" onclick="openPilotProfile('${r.pilot}')">${r.pilot}</span></td>
                     <td class="highlight"><b>${r.elo} pts</b></td>
-                    <td><b>${r.score1000.toFixed(2)}</b></td>
-                    <td>${r.sumPoints1000.toFixed(2)}</td>
+                    <td><b>${r.sumPercent.toFixed(2)}%</b></td>
+                    <td>${r.avgPercent.toFixed(2)}%</td>
                     <td>${r.contestCount}</td>
                     <td>${statusBadge}</td>
                 </tr>`;
@@ -1170,8 +1201,7 @@
                 genHtml += `<tr class="${rowClass}">
                     <td><b>${rankDisplay}</b></td>
                     <td><span class="pilot-link" onclick="openPilotProfile('${r.pilot}')">${r.pilot}</span></td>
-                    <td class="highlight"><b>${r.score1000.toFixed(2)}</b></td>
-                    <td><b>${r.sumPoints1000.toFixed(2)}</b> (${r.sumPercent.toFixed(2)}%)</td>
+                    <td class="highlight"><b>${r.sumPercent.toFixed(2)}%</b></td>
                     <td>${r.avgPercent.toFixed(2)}%</td>
                     <td><b>${r.elo} pts</b></td>
                     <td>${r.contestCount}</td>
@@ -1240,8 +1270,8 @@
         if (rankObj) {
             let statusText = rankObj.isOfficial ? '<span style="color:#107c41; font-weight:500;">Officiel</span>' : '<span style="color:#d97706;">Non classé (< 3 concours)</span>';
             html += `<p style="font-size:13px; color:var(--text-muted);">
-                Note CdF : <b class="highlight">${rankObj.score1000.toFixed(2)} / 1000</b> &bull; 
-                Cumul 4/10 : <b>${rankObj.sumPoints1000.toFixed(2)} pts</b> (${rankObj.sumPercent.toFixed(2)}%) &bull; 
+                Cumul 4/10 : <b class="highlight">${rankObj.sumPercent.toFixed(2)}%</b> &bull; 
+                Moyenne : <b>${rankObj.avgPercent.toFixed(2)}%</b> &bull; 
                 Cote Elo : <b>${rankObj.elo} pts</b> &bull; 
                 Concours : ${rankObj.contestCount} &bull; Statut : ${statusText}
             </p>`;
@@ -1271,19 +1301,19 @@
         let maxElo = Math.ceil((Math.max(...eloScores, 1250) + 50) / 100) * 100;
         if (minElo === maxElo) { maxElo += 100; minElo -= 100; }
 
-        let dx = (width - padding * 2) / Math.max(history.length - 1, 1);
+        let dx = history.length > 1 ? (width - padding * 2) / (history.length - 1) : 0;
         let dyRaw = (height - padding * 2) / (maxRaw - minRaw || 1);
         let dyElo = (height - padding * 2) / (maxElo - minElo || 1);
 
         let rawPoints = history.map((h, i) => ({
-            x: padding + i * dx,
+            x: history.length === 1 ? width / 2 : padding + i * dx,
             y: height - padding - (h.raw - minRaw) * dyRaw,
             val: h.raw,
             name: h.contestName
         }));
 
         let eloPoints = history.map((h, i) => ({
-            x: padding + i * dx,
+            x: history.length === 1 ? width / 2 : padding + i * dx,
             y: height - padding - (h.eloAfter - minElo) * dyElo,
             val: h.eloAfter,
             name: h.contestName
@@ -1313,10 +1343,23 @@
         }
 
         rawPoints.forEach((p, i) => {
-            svg += `<circle cx="${p.x}" cy="${p.y}" r="4" fill="#e53e3e" stroke="#fff" stroke-width="1.5"/>`;
             let ep = eloPoints[i];
+
+            svg += `<circle cx="${p.x}" cy="${p.y}" r="4" fill="#e53e3e" stroke="#fff" stroke-width="1.5"/>`;
             svg += `<circle cx="${ep.x}" cy="${ep.y}" r="5" fill="#1b365d" stroke="#fff" stroke-width="1.5"/>`;
-            svg += `<text x="${ep.x}" y="${ep.y - 10}" font-size="10" fill="#1b365d" font-weight="700" text-anchor="middle">${ep.val} pts</text>`;
+
+            let faYLabel, eloYLabel;
+            if (p.y < ep.y) {
+                faYLabel = p.y - 10;
+                eloYLabel = ep.y + 16;
+            } else {
+                eloYLabel = ep.y - 10;
+                faYLabel = p.y + 16;
+            }
+
+            svg += `<text x="${p.x}" y="${faYLabel}" font-size="10" fill="#e53e3e" font-weight="700" text-anchor="middle">${p.val} pts</text>`;
+            svg += `<text x="${ep.x}" y="${eloYLabel}" font-size="10" fill="#1b365d" font-weight="700" text-anchor="middle">${ep.val} pts</text>`;
+
             svg += `<text x="${p.x}" y="${height - padding + 18}" font-size="10" fill="#4a5568" text-anchor="middle" transform="rotate(-10 ${p.x} ${height - padding + 18})">${p.name}</text>`;
         });
 
@@ -1324,7 +1367,7 @@
 
         svg += `<div class="legend">
             <div class="legend-item"><span class="legend-color" style="background: #1b365d;"></span> <b>Évolution Elo (Axe droit)</b></div>
-            <div class="legend-item"><span class="legend-color" style="background: #e53e3e; border-top: 2px dashed #e53e3e; height:0;"></span> <b>Score Brut F3X Vault (Axe gauche)</b></div>
+            <div class="legend-item"><span class="legend-color" style="background: #e53e3e; border-top: 2px dashed #e53e3e; height:0;"></span> <b>Score FAI (%) (Axe gauche)</b></div>
         </div>`;
 
         return svg;
@@ -1341,12 +1384,12 @@
          xmlns:html="http://www.w3.org/TR/REC-html40">`;
 
         xml += `<Worksheet ss:Name="Classements Généraux"><Table>`;
-        xml += `<Row><Cell><Data ss:Type="String">Pilote</Data></Cell><Cell><Data ss:Type="String">Note CdF (/1000)</Data></Cell><Cell><Data ss:Type="String">Cumul 4/10 (Pts)</Data></Cell><Cell><Data ss:Type="String">Cote Elo</Data></Cell><Cell><Data ss:Type="String">Moyenne % / Course</Data></Cell><Cell><Data ss:Type="String">Concours Disputes</Data></Cell><Cell><Data ss:Type="String">Statut</Data></Cell></Row>`;
+        xml += `<Row><Cell><Data ss:Type="String">Pilote</Data></Cell><Cell><Data ss:Type="String">Cumul 4/10 (%)</Data></Cell><Cell><Data ss:Type="String">Moyenne % / Course</Data></Cell><Cell><Data ss:Type="String">Cote Elo</Data></Cell><Cell><Data ss:Type="String">Concours Disputes</Data></Cell><Cell><Data ss:Type="String">Statut</Data></Cell></Row>`;
         
         let sortedExport = [...currentSeasonRankings].sort((a,b) => b.sumPercent - a.sumPercent);
         sortedExport.forEach(r => {
             let status = r.isOfficial ? 'Officiel' : 'Non classe';
-            xml += `<Row><Cell><Data ss:Type="String">${r.pilot}</Data></Cell><Cell><Data ss:Type="Number">${r.score1000.toFixed(2)}</Data></Cell><Cell><Data ss:Type="Number">${r.sumPoints1000.toFixed(2)}</Data></Cell><Cell><Data ss:Type="Number">${r.elo}</Data></Cell><Cell><Data ss:Type="Number">${r.avgPercent.toFixed(2)}</Data></Cell><Cell><Data ss:Type="Number">${r.contestCount}</Data></Cell><Cell><Data ss:Type="String">${status}</Data></Cell></Row>`;
+            xml += `<Row><Cell><Data ss:Type="String">${r.pilot}</Data></Cell><Cell><Data ss:Type="Number">${r.sumPercent.toFixed(2)}</Data></Cell><Cell><Data ss:Type="Number">${r.avgPercent.toFixed(2)}</Data></Cell><Cell><Data ss:Type="Number">${r.elo}</Data></Cell><Cell><Data ss:Type="Number">${r.contestCount}</Data></Cell><Cell><Data ss:Type="String">${status}</Data></Cell></Row>`;
         });
         xml += `</Table></Worksheet>`;
 
