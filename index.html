@@ -665,6 +665,7 @@
         tempRows.forEach(item => {
             let pctScore = 0;
             if (winnerPoints > 0 && item.pts > 0) {
+                // Score exact en % (ex: 93.180555%)
                 pctScore = (item.pts / winnerPoints) * 100;
             } else if (item.pct > 0) {
                 pctScore = item.pct;
@@ -923,7 +924,7 @@
                 }
             });
 
-            // Règlement FFAM / FAI : conservation des 4 meilleurs résultats (4/10)
+            // Règlement FFAM / FAI : conservation des 4 meilleurs résultats
             let best4Scores = [...allScores].sort((a, b) => b - a).slice(0, 4);
             let sumBest4Percent = best4Scores.reduce((a, b) => a + b, 0);
             let avgBest4Percent = best4Scores.length > 0 ? (sumBest4Percent / best4Scores.length) : 0;
@@ -931,10 +932,6 @@
             let finalEloVal = Math.round(pilotEloGlobal[pilot] || 1200);
             let avgPercent = contestCount > 0 ? (sumPercent / contestCount) : 0;
             let isOfficial = contestCount >= MIN_CONTESTS_REQUIRED;
-
-            if (history.length > 0) {
-                history[history.length - 1].eloAfter = finalEloVal;
-            }
 
             currentSeasonRankings.push({
                 pilot,
