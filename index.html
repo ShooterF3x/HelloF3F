@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HelloF3F - Classement National & Modèle à Marges (Massey)</title>
+    <title>HelloF3F — Modèle de Performance à Marges (Massey)</title>
     <style>
         :root {
             --bg-color: #0f172a;
@@ -16,14 +16,13 @@
             --accent: #10b981;
             --warning: #f59e0b;
             --danger: #ef4444;
-            --badge-bg: #334155;
         }
 
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
 
         body {
@@ -52,9 +51,6 @@
         h1 {
             font-size: 1.8rem;
             color: var(--primary);
-            display: flex;
-            align-items: center;
-            gap: 10px;
         }
 
         .subtitle {
@@ -62,7 +58,6 @@
             color: var(--text-muted);
         }
 
-        /* Navigation Tabs */
         .tabs {
             display: flex;
             gap: 10px;
@@ -95,7 +90,6 @@
             border-color: var(--primary);
         }
 
-        /* Controls / Filters bar */
         .controls-bar {
             background: var(--card-bg);
             border: 1px solid var(--card-border);
@@ -122,7 +116,7 @@
             font-weight: 600;
         }
 
-        select, input[type="text"], input[type="number"], input[type="range"] {
+        select, input[type="text"], input[type="number"] {
             background: var(--bg-color);
             border: 1px solid var(--card-border);
             color: var(--text-main);
@@ -136,27 +130,28 @@
             border-color: var(--primary);
         }
 
-        /* Drop Zone */
         .drop-zone {
             border: 2px dashed var(--card-border);
             border-radius: 12px;
-            padding: 25px;
+            padding: 20px;
             text-align: center;
             background: rgba(30, 41, 59, 0.5);
             cursor: pointer;
             transition: all 0.2s;
             margin-bottom: 20px;
+            font-size: 0.9rem;
+            color: var(--text-muted);
         }
 
         .drop-zone:hover, .drop-zone.dragover {
             border-color: var(--primary);
             background: rgba(56, 189, 248, 0.05);
+            color: var(--text-main);
         }
 
-        /* Cards & Metrics Grid */
         .metrics-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
             gap: 15px;
             margin-bottom: 25px;
         }
@@ -169,7 +164,7 @@
         }
 
         .card h4 {
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             color: var(--text-muted);
             margin-bottom: 8px;
             text-transform: uppercase;
@@ -181,7 +176,6 @@
             color: var(--primary);
         }
 
-        /* Data Tables */
         .table-container {
             background: var(--card-bg);
             border: 1px solid var(--card-border);
@@ -221,7 +215,6 @@
             background: rgba(56, 189, 248, 0.03);
         }
 
-        /* Badges & Indicators */
         .badge {
             display: inline-block;
             padding: 3px 8px;
@@ -235,24 +228,11 @@
         .badge-danger { background: rgba(239, 68, 68, 0.2); color: #f87171; }
         .badge-info { background: rgba(56, 189, 248, 0.2); color: #7dd3fc; }
 
-        .elo-val {
-            font-weight: 700;
-            font-size: 1.05rem;
-        }
+        .elo-val { font-weight: 700; font-size: 1.05rem; }
+        .sigma-val { font-size: 0.8rem; color: var(--text-muted); margin-left: 4px; }
 
-        .sigma-val {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            margin-left: 4px;
-        }
-
-        .tab-content {
-            display: none;
-        }
-
-        .tab-content.active {
-            display: block;
-        }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
 
         .btn {
             background: var(--primary);
@@ -265,8 +245,12 @@
             transition: background 0.2s;
         }
 
-        .btn:hover {
-            background: var(--primary-hover);
+        .btn:hover { background: var(--primary-hover); }
+
+        #status-msg {
+            font-size: 0.85rem;
+            color: var(--accent);
+            margin-top: 5px;
         }
     </style>
 </head>
@@ -275,68 +259,66 @@
 <div class="container">
     <header>
         <div>
-            <h1>🏆 HelloF3F — Classement National</h1>
-            <div class="subtitle">Modèle de performance à marges (Massey régularisé) & Analyse d'incertitude</div>
+            <h1>HelloF3F — Classement National par Marges</h1>
+            <div class="subtitle">Modèle de Massey régularisé (Ridge) • Pondération f(manches, pilotes) • Incertitude σ</div>
         </div>
         <div>
-            <button class="btn" onclick="document.getElementById('csv-file-input').click()">➕ Charger Fichiers CSV</button>
+            <button class="btn" onclick="document.getElementById('csv-file-input').click()">Ajouter des Fichiers CSV</button>
             <input type="file" id="csv-file-input" multiple accept=".csv" style="display:none;" onchange="handleFileSelect(event)">
         </div>
     </header>
 
-    <!-- Navigation Tabs -->
     <div class="tabs">
-        <button class="tab-btn active" onclick="switchTab('ranking')">🥇 Classement Officiel</button>
-        <button class="tab-btn" onclick="switchTab('events')">🚩 Niveau des Concours</button>
-        <button class="tab-btn" onclick="switchTab('graph')">🕸️ Graphe & Connectivité</button>
-        <button class="tab-btn" onclick="switchTab('audit')">🔍 Audit Prédictif & Stabilité</button>
+        <button class="tab-btn active" onclick="switchTab('ranking')">Classement Officiel</button>
+        <button class="tab-btn" onclick="switchTab('events')">Niveau des Concours (a_e)</button>
+        <button class="tab-btn" onclick="switchTab('graph')">Graphe & Connectivité</button>
+        <button class="tab-btn" onclick="switchTab('audit')">Audit & Validation</button>
     </div>
 
-    <!-- Zone de dépôt CSV si besoin -->
     <div class="drop-zone" id="drop-zone" onclick="document.getElementById('csv-file-input').click()">
-        📂 Glissez-déposez vos fichiers <code>event_export.csv</code> ici ou cliquez pour importer.
+        Glissez-déposez des fichiers <code>event_export.csv</code> supplémentaires ici ou cliquez pour parcourir.
+        <div id="status-msg">Chargement des fichiers CSV du dépôt en cours...</div>
     </div>
 
-    <!-- Barre de filtres et paramètres -->
     <div class="controls-bar">
         <div class="control-group">
-            <label for="filter-year">Année</label>
+            <label for="filter-year">Saison / Année</label>
             <select id="filter-year" onchange="recomputeAll()">
-                <option value="ALL">Toutes les années</option>
+                <option value="ALL">Toutes les saisons</option>
                 <option value="2026">2026</option>
                 <option value="2025">2025</option>
             </select>
         </div>
 
         <div class="control-group">
-            <label for="ranking-mode">Mode de classement</label>
+            <label for="ranking-mode">Affichage Niveau</label>
             <select id="ranking-mode" onchange="renderRanking()">
-                <option value="ESTIMATED">Niveau estimé (Elo Moyen)</option>
+                <option value="ESTIMATED">Niveau Estimé (Elo Moyen)</option>
                 <option value="CONSERVATIVE">Prudence (Borne basse 95% : Elo - 1.96 σ)</option>
             </select>
         </div>
 
         <div class="control-group">
-            <label for="sigma-threshold">Seuil d'incertitude max (σ Elo)</label>
-            <input type="number" id="sigma-threshold" value="60" min="10" max="200" step="5" onchange="renderRanking()">
+            <label for="sigma-threshold">Incertitude max (σ Elo)</label>
+            <input type="number" id="sigma-threshold" value="65" min="10" max="200" step="5" onchange="renderRanking()">
         </div>
 
         <div class="control-group">
-            <label for="ridge-lambda">Régularisation Ridge (λ)</label>
+            <label for="ridge-lambda">Pénalité Ridge (λ)</label>
             <input type="number" id="ridge-lambda" value="0.05" min="0.001" max="1" step="0.01" onchange="recomputeAll()">
         </div>
 
         <div class="control-group" style="margin-left: auto;">
-            <label for="search-pilot">Rechercher Pilote</label>
+            <label for="search-pilot">Filtrer par Pilote</label>
             <input type="text" id="search-pilot" placeholder="Nom du pilote..." oninput="renderRanking()">
         </div>
     </div>
 
-    <!-- TAB 1: CLASSEMENT OFFICIEL -->
+    <!-- TAB 1: CLASSEMENT -->
     <div id="tab-ranking" class="tab-content active">
         <div class="metrics-grid">
             <div class="card">
-                <h4>Pilotes Totaux</h4>
+                <h4>Pilotes Prétendants</h4>
                 <div class="metric-val" id="metric-total-pilots">0</div>
             </div>
             <div class="card">
@@ -344,11 +326,11 @@
                 <div class="metric-val" id="metric-classified-pilots" style="color: var(--accent);">0</div>
             </div>
             <div class="card">
-                <h4>Concours Pris en Compte</h4>
+                <h4>Concours Traités</h4>
                 <div class="metric-val" id="metric-total-events">0</div>
             </div>
             <div class="card">
-                <h4>Manches Analysées</h4>
+                <h4>Total Manches</h4>
                 <div class="metric-val" id="metric-total-rounds">0</div>
             </div>
         </div>
@@ -359,16 +341,16 @@
                     <tr>
                         <th>Rang</th>
                         <th>Pilote</th>
-                        <th>Elo Estimé (s_p)</th>
+                        <th>Niveau Elo (1200 + s_p)</th>
                         <th>Incertitude (± 1.96 σ)</th>
                         <th>Borne Basse 95%</th>
                         <th>Concours</th>
-                        <th>Statut Graphe</th>
-                        <th>Éligibilité</th>
+                        <th>Réseau</th>
+                        <th>Statut Officiel</th>
                     </tr>
                 </thead>
                 <tbody id="table-ranking-body">
-                    <tr><td colspan="8" style="text-align:center; color: var(--text-muted);">Chargement des données...</td></tr>
+                    <tr><td colspan="8" style="text-align:center;">Calcul du classement en cours...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -376,18 +358,16 @@
 
     <!-- TAB 2: NIVEAU DES CONCOURS -->
     <div id="tab-events" class="tab-content">
-        <h3>Evaluation du niveau des épreuves (a_e)</h3>
-        <p class="subtitle" style="margin-bottom: 15px;">Le terme a_e reflète la difficulté et le niveau du plateau du concours, résolu conjointement sans circularité IDC.</p>
         <div class="table-container">
             <table>
                 <thead>
                     <tr>
-                        <th>Concours / Événement</th>
-                        <th>Année</th>
+                        <th>Concours</th>
+                        <th>Saison</th>
                         <th>Manches</th>
                         <th>Pilotes</th>
                         <th>Poids f(M, N)</th>
-                        <th>Niveau Estimé (a_e)</th>
+                        <th>Niveau Intrinseque (a_e)</th>
                         <th>Équivalent Elo Plateau</th>
                     </tr>
                 </thead>
@@ -396,22 +376,19 @@
         </div>
     </div>
 
-    <!-- TAB 3: GRAPHE & CONNECTIVITÉ -->
+    <!-- TAB 3: GRAPHE -->
     <div id="tab-graph" class="tab-content">
-        <h3>Analyse de connectivité du réseau des compétiteurs</h3>
-        <p class="subtitle" style="margin-bottom: 15px;">Garantit que seuls les pilotes interconnectés par un nombre suffisant d'adversaires communs figurent au classement officiel.</p>
-        
         <div class="metrics-grid">
             <div class="card">
                 <h4>Composante Principale</h4>
                 <div class="metric-val" id="metric-main-component-size">0</div>
             </div>
             <div class="card">
-                <h4>Pilotes Isolés / Sous-groupes</h4>
+                <h4>Groupes Isoles</h4>
                 <div class="metric-val" id="metric-isolated-size" style="color: var(--warning);">0</div>
             </div>
             <div class="card">
-                <h4>Pilotes "Ponts" Régionaux</h4>
+                <h4>Pilotes Ponts (Inter-Régions)</h4>
                 <div class="metric-val" id="metric-bridges-count" style="color: var(--primary);">0</div>
             </div>
         </div>
@@ -421,9 +398,9 @@
                 <thead>
                     <tr>
                         <th>Pilote</th>
-                        <th>Composante Connexe</th>
-                        <th>Nombre d'Adversaires Directs</th>
-                        <th>Rôle Réseau</th>
+                        <th>Composante</th>
+                        <th>Adversaires Directs</th>
+                        <th>Rôle Dans le Réseau</th>
                     </tr>
                 </thead>
                 <tbody id="table-graph-body"></tbody>
@@ -431,32 +408,26 @@
         </div>
     </div>
 
-    <!-- TAB 4: AUDIT & STABILITÉ -->
+    <!-- TAB 4: AUDIT -->
     <div id="tab-audit" class="tab-content">
-        <h3>Validation objective & Métriques d'Audit</h3>
-        <p class="subtitle" style="margin-bottom: 15px;">Évaluation de la capacité prédictive et de la stabilité du modèle par rapport au classement actuel.</p>
-
         <div class="metrics-grid">
             <div class="card">
                 <h4>Tau de Kendall Prédictif (LOEO)</h4>
                 <div class="metric-val" id="metric-kendall-tau" style="color: var(--accent);">—</div>
-                <small style="color: var(--text-muted);">Accord moyen entre l'ordre prédit (sans voir le concours) et le résultat réel.</small>
             </div>
             <div class="card">
-                <h4>Instabilité Moyenne des Rangs</h4>
+                <h4>Instabilité Moyenne du Rang</h4>
                 <div class="metric-val" id="metric-avg-stability">—</div>
-                <small style="color: var(--text-muted);">Nombre moyen de places variées lorsqu'un concours est retiré.</small>
             </div>
         </div>
 
-        <h4>Sensibilité individuelle au retrait d'un concours</h4>
         <div class="table-container">
             <table>
                 <thead>
                     <tr>
                         <th>Pilote</th>
-                        <th>Rang Actuel</th>
-                        <th>Déviation Moyenne de Rang (Stabilité)</th>
+                        <th>Rang Général</th>
+                        <th>Déviation Moyenne (Stabilité)</th>
                         <th>Sensibilité</th>
                     </tr>
                 </thead>
@@ -468,16 +439,179 @@
 
 <script>
 // ==========================================
-// 1. MOTEUR MATHÉMATIQUE DE MASSEY RÉGULARISÉ
+// 1. LISTE DES FICHIERS CSV DU DÉPÔT
 // ==========================================
+const DEFAULT_CSV_FILES = [
+    // Saison 2025
+    "data/2025/event_export (11).csv",
+    "data/2025/event_export (12).csv",
+    "data/2025/event_export (13).csv",
+    "data/2025/event_export (14).csv",
+    "data/2025/event_export (15).csv",
+    "data/2025/event_export (16).csv",
+    "data/2025/event_export (17).csv",
+    "data/2025/event_export (18).csv",
+    "data/2025/event_export (19).csv",
+    "data/2025/event_export (20).csv",
+    // Saison 2026
+    "data/2026/event_export (5).csv",
+    "data/2026/event_export (6).csv",
+    "data/2026/event_export (7).csv",
+    "data/2026/event_export (8).csv",
+    "data/2026/event_export (9).csv",
+    "data/2026/event_export (10).csv"
+];
 
+// Données globales
+let globalEvents = {};
+let globalScores = [];
+let calculatedResults = null;
+let graphAnalysis = null;
+let auditAnalysis = null;
+
+// ==========================================
+// 2. PARSER ROBUSTE POUR EVENT_EXPORT.CSV
+// ==========================================
+function parseCSV(text, fileName) {
+    const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+    if (lines.length < 2) return;
+
+    // Extrait l'année depuis le chemin/nom de fichier
+    const yearMatch = fileName.match(/202[4-9]/);
+    const year = yearMatch ? parseInt(yearMatch[0]) : 2026;
+    
+    // Identifiant propre du concours
+    const eventId = fileName.replace(/^.*[\\\/]/, '').replace(/\.csv$/i, '');
+
+    // Détection du séparateur (virgule ou point-virgule ou tabulation)
+    const firstLine = lines[0];
+    let sep = ',';
+    if (firstLine.includes(';')) sep = ';';
+    else if (firstLine.includes('\t')) sep = '\t';
+
+    const headers = firstLine.split(sep).map(h => h.trim().replace(/^"|"$/g, ''));
+    
+    // Détection des colonnes de manches (ex: R1, R2, Round 1, M1, etc.)
+    let roundColsCount = 0;
+    headers.forEach(h => {
+        if (/^(r|round|m|manche)\s*\d+/i.test(h)) roundColsCount++;
+    });
+
+    let pilotsCount = 0;
+
+    for (let i = 1; i < lines.length; i++) {
+        const cols = lines[i].split(sep).map(c => c.trim().replace(/^"|"$/g, ''));
+        if (cols.length < 2) continue;
+
+        // Le nom du pilote est généralement en 1ère ou 2ème colonne
+        let pilotName = cols[0];
+        if (!isNaN(parseFloat(cols[0])) && cols.length > 2) {
+            pilotName = cols[1]; // Si col 0 est un dossier / ID
+        }
+
+        if (!pilotName || pilotName.length < 2 || pilotName.toLowerCase().includes('total')) continue;
+
+        // Récupération du score global / pourcentage (dernière colonne numérique)
+        let scoreVal = NaN;
+        for (let j = cols.length - 1; j >= 0; j--) {
+            const val = parseFloat(cols[j].replace(',', '.'));
+            if (!isNaN(val) && val > 0) {
+                scoreVal = val;
+                break;
+            }
+        }
+
+        if (isNaN(scoreVal)) continue;
+
+        // Normalisation en ratio [0, 1] (si exprimé en 1000 ou %)
+        let ratio = scoreVal;
+        if (ratio > 100) ratio /= 1000;
+        else if (ratio > 1.5) ratio /= 100;
+
+        ratio = Math.min(1.0, Math.max(0.05, ratio));
+
+        globalScores.push({
+            pilotId: pilotName,
+            eventId: eventId,
+            score: ratio
+        });
+
+        pilotsCount++;
+    }
+
+    if (pilotsCount > 0) {
+        globalEvents[eventId] = {
+            id: eventId,
+            name: eventId,
+            year: year,
+            rounds: roundColsCount > 0 ? roundColsCount : 6, // Valeur par défaut si non spécifié
+            pilotsCount: pilotsCount
+        };
+    }
+}
+
+// Chargement automatique au démarrage
+async function autoLoadRepoCSVs() {
+    const statusMsg = document.getElementById('status-msg');
+    let loadedCount = 0;
+
+    for (const filePath of DEFAULT_CSV_FILES) {
+        try {
+            const response = await fetch(filePath);
+            if (response.ok) {
+                const text = await response.text();
+                parseCSV(text, filePath);
+                loadedCount++;
+            }
+        } catch (e) {
+            // Fichier non trouvé si exécuté hors serveur Web
+        }
+    }
+
+    if (loadedCount > 0) {
+        statusMsg.innerText = `${loadedCount} fichiers CSV chargés automatiquement depuis le dépôt.`;
+    } else {
+        statusMsg.innerText = "Glissez-déposez vos fichiers CSV ci-dessus pour démarrer l'analyse.";
+    }
+
+    recomputeAll();
+}
+
+function handleFileSelect(evt) {
+    const files = evt.target.files;
+    if (!files.length) return;
+
+    Array.from(files).forEach(f => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            parseCSV(e.target.result, f.name);
+            recomputeAll();
+        };
+        reader.readAsText(f);
+    });
+}
+
+// Drag & Drop
+const dropZone = document.getElementById('drop-zone');
+dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    if (e.dataTransfer.files.length) {
+        handleFileSelect({ target: { files: e.dataTransfer.files } });
+    }
+});
+
+// ==========================================
+// 3. MOTEUR MATHÉMATIQUE DE MASSEY
+// ==========================================
 class MasseyEngine {
     constructor(lambda = 0.05) {
         this.lambda = lambda;
-        this.eloScale = 400 / Math.LN10; // ~173.7178
+        this.eloScale = 400 / Math.LN10;
     }
 
-    // Calcul du poids d'un concours f(manches, pilotes)
     calculateEventWeight(rounds, pilotsCount) {
         const r = Math.max(1, rounds || 1);
         const p = Math.max(2, pilotsCount || 2);
@@ -485,7 +619,6 @@ class MasseyEngine {
     }
 
     solve(eventsDict, scoreRecords) {
-        // Collecte des pilotes uniques et concours uniques
         const pilotIds = Array.from(new Set(scoreRecords.map(r => r.pilotId)));
         const eventIds = Array.from(new Set(scoreRecords.map(r => r.eventId)));
 
@@ -498,7 +631,6 @@ class MasseyEngine {
         const pilotMap = new Map(pilotIds.map((id, idx) => [id, idx]));
         const eventMap = new Map(eventIds.map((id, idx) => [id, np + idx]));
 
-        // Construction du système N * x = b avec moindres carrés pondérés + Ridge
         const N = Array.from({ length: dim }, () => new Float64Array(dim));
         const b = new Float64Array(dim);
 
@@ -508,7 +640,6 @@ class MasseyEngine {
             const evt = eventsDict[rec.eventId];
             const w = this.calculateEventWeight(evt?.rounds, evt?.pilotsCount);
 
-            // Équation: s_p + a_e = score (avec poids w)
             N[pi][pi] += w;
             N[ei][ei] += w;
             N[pi][ei] += w;
@@ -518,16 +649,11 @@ class MasseyEngine {
             b[ei] += w * rec.score;
         });
 
-        // Régularisation Ridge
-        for (let i = 0; i < dim; i++) {
-            N[i][i] += this.lambda;
-        }
+        for (let i = 0; i < dim; i++) N[i][i] += this.lambda;
 
-        // Inversion par Gauss-Jordan
         const invN = this.invertMatrix(N);
         if (!invN) return null;
 
-        // Solution x = invN * b
         const x = new Float64Array(dim);
         for (let i = 0; i < dim; i++) {
             for (let j = 0; j < dim; j++) {
@@ -535,31 +661,23 @@ class MasseyEngine {
             }
         }
 
-        // Variance des résidus sigma^2
         let ssr = 0;
-        let weightSum = 0;
         scoreRecords.forEach(rec => {
             const pi = pilotMap.get(rec.pilotId);
             const ei = eventMap.get(rec.eventId);
             const evt = eventsDict[rec.eventId];
             const w = this.calculateEventWeight(evt?.rounds, evt?.pilotsCount);
-
-            const pred = x[pi] + x[ei];
-            const diff = rec.score - pred;
+            const diff = rec.score - (x[pi] + x[ei]);
             ssr += w * diff * diff;
-            weightSum += w;
         });
 
-        const degreesOfFreedom = Math.max(1, scoreRecords.length - dim);
-        const residualVar = ssr / degreesOfFreedom;
+        const dof = Math.max(1, scoreRecords.length - dim);
+        const residualVar = ssr / dof;
 
-        // Extraction des niveaux pilotes
         const pilotResults = {};
         pilotIds.forEach((pid, idx) => {
             const s_p = x[idx];
-            const var_sp = invN[idx][idx] * residualVar;
-            const sigma_sp = Math.sqrt(Math.max(0, var_sp));
-
+            const sigma_sp = Math.sqrt(Math.max(0, invN[idx][idx] * residualVar));
             const elo = 1200 + this.eloScale * s_p;
             const sigmaElo = this.eloScale * sigma_sp;
 
@@ -572,7 +690,6 @@ class MasseyEngine {
             };
         });
 
-        // Extraction des niveaux concours
         const eventResults = {};
         eventIds.forEach((eid, idx) => {
             const a_e = x[np + idx];
@@ -601,9 +718,7 @@ class MasseyEngine {
             }
             if (Math.abs(A[pivot][i]) < 1e-12) return null;
 
-            if (pivot !== i) {
-                const tmp = A[i]; A[i] = A[pivot]; A[pivot] = tmp;
-            }
+            if (pivot !== i) { const tmp = A[i]; A[i] = A[pivot]; A[pivot] = tmp; }
 
             const div = A[i][i];
             for (let j = 0; j < 2 * n; j++) A[i][j] /= div;
@@ -611,23 +726,19 @@ class MasseyEngine {
             for (let k = 0; k < n; k++) {
                 if (k !== i) {
                     const factor = A[k][i];
-                    for (let j = 0; j < 2 * n; j++) {
-                        A[k][j] -= factor * A[i][j];
-                    }
+                    for (let j = 0; j < 2 * n; j++) A[k][j] -= factor * A[i][j];
                 }
             }
         }
-
         return A.map(row => row.slice(n));
     }
 }
 
 // ==========================================
-// 2. ANALYSEUR DE CONNECTIVITÉ DU GRAPHE
+// 4. ANALYSE DU GRAPHE
 // ==========================================
-
 class ConnectivityGraph {
-    static analyze(scoreRecords, minShared = 1) {
+    static analyze(scoreRecords) {
         const pilotEvents = new Map();
         scoreRecords.forEach(r => {
             if (!pilotEvents.has(r.pilotId)) pilotEvents.set(r.pilotId, new Set());
@@ -637,7 +748,6 @@ class ConnectivityGraph {
         const pilots = Array.from(pilotEvents.keys());
         const adj = new Map(pilots.map(p => [p, new Set()]));
 
-        // Direct edges
         for (let i = 0; i < pilots.length; i++) {
             for (let j = i + 1; j < pilots.length; j++) {
                 const p1 = pilots[i], p2 = pilots[j];
@@ -645,14 +755,13 @@ class ConnectivityGraph {
                 let shared = 0;
                 for (let e of e1) { if (e2.has(e)) shared++; }
 
-                if (shared >= minShared) {
+                if (shared >= 1) {
                     adj.get(p1).add(p2);
                     adj.get(p2).add(p1);
                 }
             }
         }
 
-        // Composantes connexes
         const visited = new Set();
         const components = [];
 
@@ -678,7 +787,6 @@ class ConnectivityGraph {
         components.sort((a, b) => b.length - a.length);
         const mainComp = new Set(components[0] || []);
 
-        // Pilotes ponts
         const bridges = new Set();
         pilots.forEach(p => {
             if (pilotEvents.get(p).size >= 2 && adj.get(p).size >= 3) {
@@ -691,9 +799,8 @@ class ConnectivityGraph {
 }
 
 // ==========================================
-// 3. MOTEUR D'AUDIT PRÉDICTIF & STABILITÉ
+// 5. AUDIT PRÉDICTIF & STABILITÉ
 // ==========================================
-
 class AuditEngine {
     static kendallTau(rankA, rankB) {
         const common = Object.keys(rankA).filter(k => k in rankB);
@@ -717,7 +824,6 @@ class AuditEngine {
         const eventIds = Object.keys(eventsDict);
         let totalTau = 0, count = 0;
 
-        // 1. Back-test Leave-One-Event-Out
         eventIds.forEach(eid => {
             const trainData = scoreRecords.filter(r => r.eventId !== eid);
             const testData = scoreRecords.filter(r => r.eventId === eid);
@@ -735,14 +841,12 @@ class AuditEngine {
                 }
             });
 
-            const tau = this.kendallTau(predRanks, realRanks);
-            totalTau += tau;
+            totalTau += this.kendallTau(predRanks, realRanks);
             count++;
         });
 
         const meanTau = count > 0 ? (totalTau / count).toFixed(3) : "N/A";
 
-        // 2. Test de stabilité
         const mainEngine = new MasseyEngine(lambda);
         const baseRes = mainEngine.solve(eventsDict, scoreRecords);
         if (!baseRes) return { meanTau, avgStability: "N/A", pilotStability: {} };
@@ -765,9 +869,7 @@ class AuditEngine {
                 .reduce((acc, [p], idx) => { acc[p] = idx + 1; return acc; }, {});
 
             Object.keys(baseRanks).forEach(p => {
-                if (newRanks[p]) {
-                    rankShifts[p].push(Math.abs(baseRanks[p] - newRanks[p]));
-                }
+                if (newRanks[p]) rankShifts[p].push(Math.abs(baseRanks[p] - newRanks[p]));
             });
         });
 
@@ -785,154 +887,17 @@ class AuditEngine {
         });
 
         const avgStability = globalShiftCount > 0 ? (globalShiftSum / globalShiftCount).toFixed(2) : "0.00";
-
         return { meanTau, avgStability, pilotStability, baseRanks };
     }
 }
 
 // ==========================================
-// 4. ÉTAT GLOBAL & DONNÉES DÉMO INCLUSES
+// 6. METRIC & RENDU UI
 // ==========================================
-
-let globalEvents = {};
-let globalScores = [];
-let calculatedResults = null;
-let graphAnalysis = null;
-let auditAnalysis = null;
-
-// Données démo préchargées (2025 & 2026) pour un fonctionnement immédiat
-function loadDemoData() {
-    globalEvents = {
-        "2025_CF": { id: "2025_CF", name: "Championnat de France 2025", year: 2025, rounds: 12, pilotsCount: 22 },
-        "2025_E1": { id: "2025_E1", name: "Cassoulet Soaring 2025", year: 2025, rounds: 8, pilotsCount: 18 },
-        "2025_E2": { id: "2025_E2", name: "Typhoon Race 2025", year: 2025, rounds: 6, pilotsCount: 14 },
-        "2026_E1": { id: "2026_E1", name: "Cassoulet Soaring 2026", year: 2026, rounds: 10, pilotsCount: 20 },
-        "2026_E2": { id: "2026_E2", name: "Viking Contest 2026", year: 2026, rounds: 7, pilotsCount: 15 }
-    };
-
-    globalScores = [
-        // 2025 CF
-        { pilotId: "Jean-Bastien Deguelle", eventId: "2025_CF", score: 0.985 },
-        { pilotId: "Pierre Dupont", eventId: "2025_CF", score: 1.000 },
-        { pilotId: "Marc Voinchet", eventId: "2025_CF", score: 0.962 },
-        { pilotId: "Philippe Roussel", eventId: "2025_CF", score: 0.941 },
-        { pilotId: "Antoine Moreau", eventId: "2025_CF", score: 0.910 },
-
-        // 2025 Cassoulet
-        { pilotId: "Jean-Bastien Deguelle", eventId: "2025_E1", score: 1.000 },
-        { pilotId: "Marc Voinchet", eventId: "2025_E1", score: 0.978 },
-        { pilotId: "Philippe Roussel", eventId: "2025_E1", score: 0.955 },
-        { pilotId: "Luc Bernard", eventId: "2025_E1", score: 0.890 },
-
-        // 2025 Typhoon
-        { pilotId: "Pierre Dupont", eventId: "2025_E2", score: 1.000 },
-        { pilotId: "Antoine Moreau", eventId: "2025_E2", score: 0.935 },
-        { pilotId: "Luc Bernard", eventId: "2025_E2", score: 0.880 },
-
-        // 2026 Cassoulet
-        { pilotId: "Jean-Bastien Deguelle", eventId: "2026_E1", score: 0.992 },
-        { pilotId: "Pierre Dupont", eventId: "2026_E1", score: 1.000 },
-        { pilotId: "Marc Voinchet", eventId: "2026_E1", score: 0.971 },
-        { pilotId: "Thomas Fabre", eventId: "2026_E1", score: 0.895 },
-
-        // 2026 Viking
-        { pilotId: "Marc Voinchet", eventId: "2026_E2", score: 1.000 },
-        { pilotId: "Philippe Roussel", eventId: "2026_E2", score: 0.968 },
-        { pilotId: "Thomas Fabre", eventId: "2026_E2", score: 0.912 }
-    ];
-
-    recomputeAll();
-}
-
-// ==========================================
-// 5. PARSER DE FICHIERS CSV (event_export)
-// ==========================================
-
-function parseCSVContent(text, fileName) {
-    const lines = text.split(/\r?\n/).filter(l => l.trim().length > 0);
-    if (lines.length < 2) return;
-
-    const yearMatch = fileName.match(/202[4-9]/);
-    const year = yearMatch ? parseInt(yearMatch[0]) : 2026;
-    const eventId = fileName.replace(/\.[^/.]+$/, "");
-
-    let roundsCount = 5;
-    let pilotsCount = 0;
-
-    lines.forEach((line, idx) => {
-        if (idx === 0) return; // En-tête
-        const cols = line.split(/[,;]/).map(c => c.trim().replace(/^"|"$/g, ''));
-        if (cols.length < 2) return;
-
-        const pilotName = cols[0];
-        const rawScore = parseFloat(cols[cols.length - 1]);
-        if (!pilotName || isNaN(rawScore)) return;
-
-        const scoreRatio = rawScore > 1.5 ? rawScore / 1000 : rawScore;
-
-        globalScores.push({
-            pilotId: pilotName,
-            eventId: eventId,
-            score: Math.min(1.0, Math.max(0.1, scoreRatio))
-        });
-
-        pilotsCount++;
-    });
-
-    globalEvents[eventId] = {
-        id: eventId,
-        name: fileName.replace('.csv', ''),
-        year: year,
-        rounds: roundsCount,
-        pilotsCount: pilotsCount
-    };
-}
-
-function handleFileSelect(evt) {
-    const files = evt.target.files;
-    if (!files.length) return;
-
-    globalEvents = {};
-    globalScores = [];
-
-    let loaded = 0;
-    Array.from(files).forEach(f => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            parseCSVContent(e.target.result, f.name);
-            loaded++;
-            if (loaded === files.length) {
-                recomputeAll();
-            }
-        };
-        reader.readAsText(f);
-    });
-}
-
-// Setup Drag & Drop
-const dropZone = document.getElementById('drop-zone');
-dropZone.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    dropZone.classList.add('dragover');
-});
-dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
-dropZone.addEventListener('drop', (e) => {
-    e.preventDefault();
-    dropZone.classList.remove('dragover');
-    if (e.dataTransfer.files.length) {
-        handleFileSelect({ target: { files: e.dataTransfer.files } });
-    }
-});
-
-// ==========================================
-// 6. CALCULS & RENDU DE L'INTERFACE
-// ==========================================
-
 function recomputeAll() {
     const selectedYear = document.getElementById('filter-year').value;
     const lambda = parseFloat(document.getElementById('ridge-lambda').value) || 0.05;
 
-    // Filtrage des concours
     let filteredEvents = { ...globalEvents };
     let filteredScores = [...globalScores];
 
@@ -940,24 +905,16 @@ function recomputeAll() {
         const yearInt = parseInt(selectedYear);
         filteredEvents = {};
         Object.keys(globalEvents).forEach(eid => {
-            if (globalEvents[eid].year === yearInt) {
-                filteredEvents[eid] = globalEvents[eid];
-            }
+            if (globalEvents[eid].year === yearInt) filteredEvents[eid] = globalEvents[eid];
         });
         filteredScores = globalScores.filter(s => filteredEvents[s.eventId]);
     }
 
-    // Résolution Massey
     const engine = new MasseyEngine(lambda);
     calculatedResults = engine.solve(filteredEvents, filteredScores);
-
-    // Analyse Graphe
     graphAnalysis = ConnectivityGraph.analyze(filteredScores);
-
-    // Audit
     auditAnalysis = AuditEngine.runAudit(filteredEvents, filteredScores, lambda);
 
-    // Mise à jour des Vues
     renderRanking();
     renderEvents();
     renderGraph();
@@ -972,7 +929,7 @@ function renderRanking() {
     }
 
     const mode = document.getElementById('ranking-mode').value;
-    const sigmaThresh = parseFloat(document.getElementById('sigma-threshold').value) || 60;
+    const sigmaThresh = parseFloat(document.getElementById('sigma-threshold').value) || 65;
     const searchTerm = document.getElementById('search-pilot').value.toLowerCase();
 
     const pilots = calculatedResults.pilots;
@@ -994,47 +951,39 @@ function renderRanking() {
         };
     });
 
-    if (searchTerm) {
-        list = list.filter(p => p.id.toLowerCase().includes(searchTerm));
-    }
+    if (searchTerm) list = list.filter(p => p.id.toLowerCase().includes(searchTerm));
 
-    // Tri selon la clé choisie
     list.sort((a, b) => b.sortKey - a.sortKey);
 
-    // Statistiques globales
     document.getElementById('metric-total-pilots').innerText = Object.keys(pilots).length;
     document.getElementById('metric-classified-pilots').innerText = list.filter(p => p.isEligible).length;
     document.getElementById('metric-total-events').innerText = Object.keys(calculatedResults.events).length;
     
     let totalRounds = 0;
-    Object.keys(calculatedResults.events).forEach(eid => {
-        totalRounds += globalEvents[eid]?.rounds || 0;
-    });
+    Object.keys(calculatedResults.events).forEach(eid => { totalRounds += globalEvents[eid]?.rounds || 0; });
     document.getElementById('metric-total-rounds').innerText = totalRounds;
 
-    // Injection Table
     let html = '';
     let rank = 1;
 
     list.forEach(p => {
         const rankDisplay = p.isEligible ? `<strong>${rank++}</strong>` : '—';
         const eloDisplay = `<span class="elo-val">${p.elo}</span> <span class="sigma-val">± ${p.sigmaElo}</span>`;
-        const ciDisplay = `${p.ciLower} – ${p.ciUpper}`;
         
         const graphBadge = p.inMain 
             ? '<span class="badge badge-success">Composante Principale</span>' 
             : '<span class="badge badge-warning">Sous-groupe Isolé</span>';
 
         const eligibleBadge = p.isEligible
-            ? '<span class="badge badge-success">Officiel</span>'
-            : `<span class="badge badge-danger">Incertitude Élevée (σ > ${sigmaThresh})</span>`;
+            ? '<span class="badge badge-success">Classé Officiel</span>'
+            : `<span class="badge badge-danger">σ > ${sigmaThresh}</span>`;
 
         html += `
-            <tr style="${!p.isEligible ? 'opacity: 0.6;' : ''}">
+            <tr style="${!p.isEligible ? 'opacity: 0.65;' : ''}">
                 <td>${rankDisplay}</td>
                 <td><strong>${p.id}</strong></td>
                 <td>${eloDisplay}</td>
-                <td>± ${1.96 * p.sigmaElo > 0 ? Math.round(1.96 * p.sigmaElo) : 0}</td>
+                <td>± ${Math.round(1.96 * p.sigmaElo)}</td>
                 <td><strong>${p.ciLower}</strong></td>
                 <td>${p.eventCount}</td>
                 <td>${graphBadge}</td>
@@ -1043,7 +992,7 @@ function renderRanking() {
         `;
     });
 
-    tbody.innerHTML = html || '<tr><td colspan="8" style="text-align:center;">Aucun pilote ne correspond aux critères.</td></tr>';
+    tbody.innerHTML = html || '<tr><td colspan="8" style="text-align:center;">Aucun pilote trouvé.</td></tr>';
 }
 
 function renderEvents() {
@@ -1080,34 +1029,23 @@ function renderGraph() {
     if (!graphAnalysis) return;
 
     document.getElementById('metric-main-component-size').innerText = graphAnalysis.mainComponent.size;
-    
     let totalIsolated = 0;
     graphAnalysis.components.slice(1).forEach(c => totalIsolated += c.length);
     document.getElementById('metric-isolated-size').innerText = totalIsolated;
     document.getElementById('metric-bridges-count').innerText = graphAnalysis.bridges.size;
 
     let html = '';
-    const allPilots = Array.from(graphAnalysis.adjacency.keys());
-
-    allPilots.forEach(p => {
+    Array.from(graphAnalysis.adjacency.keys()).forEach(p => {
         const inMain = graphAnalysis.mainComponent.has(p);
         const degree = graphAnalysis.adjacency.get(p).size;
         const isBridge = graphAnalysis.bridges.has(p);
 
-        const compBadge = inMain 
-            ? '<span class="badge badge-success">Principale</span>' 
-            : '<span class="badge badge-warning">Isolée</span>';
-
-        const roleBadge = isBridge 
-            ? '<span class="badge badge-info">Pilote Pont (Inter-régional)</span>' 
-            : '<span class="badge badge-success">Standard</span>';
-
         html += `
             <tr>
                 <td><strong>${p}</strong></td>
-                <td>${compBadge}</td>
-                <td>${degree} adversaires</td>
-                <td>${roleBadge}</td>
+                <td>${inMain ? '<span class="badge badge-success">Principale</span>' : '<span class="badge badge-warning">Isolée</span>'}</td>
+                <td>${degree} pilotes</td>
+                <td>${isBridge ? '<span class="badge badge-info">Pilote Pont</span>' : '<span class="badge badge-success">Standard</span>'}</td>
             </tr>
         `;
     });
@@ -1128,18 +1066,12 @@ function renderAudit() {
 
     Object.keys(stab).forEach(pid => {
         const shift = stab[pid].toFixed(2);
-        const curRank = baseRanks[pid] || '—';
-        
-        let sensBadge = '<span class="badge badge-success">Très Stable</span>';
-        if (shift > 2) sensBadge = '<span class="badge badge-warning">Modérée</span>';
-        if (shift > 4) sensBadge = '<span class="badge badge-danger">Sensible</span>';
-
         html += `
             <tr>
                 <td><strong>${pid}</strong></td>
-                <td>${curRank}</td>
-                <td><strong>${shift}</strong> rangs</td>
-                <td>${sensBadge}</td>
+                <td>${baseRanks[pid] || '—'}</td>
+                <td><strong>${shift}</strong> places</td>
+                <td>${shift < 2 ? '<span class="badge badge-success">Très Stable</span>' : '<span class="badge badge-warning">Sensible</span>'}</td>
             </tr>
         `;
     });
@@ -1147,18 +1079,15 @@ function renderAudit() {
     tbody.innerHTML = html;
 }
 
-// Nav Navigation
 function switchTab(tabId) {
     document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
     document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-
     event.target.classList.add('active');
     document.getElementById(`tab-${tabId}`).classList.add('active');
 }
 
-// Initialisation au chargement
 window.onload = () => {
-    loadDemoData();
+    autoLoadRepoCSVs();
 };
 </script>
 
